@@ -388,30 +388,43 @@ public class ConfigurationHelper {
                                                            annotationType,
                                                            logLevel)});
   }
-
+  
   /**
+   * Looks for an available configuration that matches the project and confName parameters.
+   * If an exact match is not found, then the defaultConfiguration is returned. The
+   * defaultConfiguration may be null, which may cause null to be returned if there is not 
+   * an exact match for the project and confName parameters. This method was added to allow
+   * the FailureTab to pass along the previous configuration for re-use, so that any jvm args
+   * defined there will be used.
    * @param launchManager
    * @param project
    * @param confName
+   * @param defaultConfiguration
    * @return
    */
-  public static ILaunchConfiguration findConfiguration(ILaunchManager launchManager, IProject project, String confName) {
+  public static ILaunchConfiguration findConfiguration(ILaunchManager launchManager, 
+		  IProject project, String confName, ILaunchConfiguration defaultConfiguration) {
     ILaunchConfigurationType confType = launchManager.getLaunchConfigurationType(TestNGLaunchConfigurationConstants.ID_TESTNG_APPLICATION);;
     ILaunchConfiguration resultConf = null;
+    
     try {
       ILaunchConfiguration[] availConfs = launchManager.getLaunchConfigurations(confType);
-      
+            
       final String projectName = project.getName();
       final String mainRunner = TestNGPluginConstants.MAIN_RUNNER;
       
       for(int i = 0; i < availConfs.length; i++) {
         String confProjectName = ConfigurationHelper.getProjectName(availConfs[i]);
         String confMainName = ConfigurationHelper.getMain(availConfs[i]);
-        
-        if(projectName.equals(confProjectName) && mainRunner.equals(confMainName) && confName.equals(availConfs[i].getName())) {
-          resultConf= availConfs[i];
-          break;
+    
+        if(projectName.equals(confProjectName) && mainRunner.equals(confMainName) &&
+        		confName.equals(availConfs[i].getName())) {       
+                resultConf= availConfs[i];
+                break;       	
         }
+      }
+      if (resultConf == null && defaultConfiguration != null) {
+      	resultConf = defaultConfiguration.copy(confName);
       }
     }
     catch(CoreException ce) {
@@ -419,6 +432,18 @@ public class ConfigurationHelper {
     }
     
     return resultConf;
+  }
+
+
+  /**
+   * Looks for an available configuration that matches the project and confName parameters.
+   * @param launchManager
+   * @param project
+   * @param confName
+   * @return
+   */
+  public static ILaunchConfiguration findConfiguration(ILaunchManager launchManager, IProject project, String confName) {
+      return findConfiguration(launchManager, project, confName, null);
   }
 
   /**
