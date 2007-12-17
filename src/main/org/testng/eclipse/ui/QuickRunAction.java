@@ -6,6 +6,7 @@ import java.util.List;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
@@ -67,11 +68,23 @@ public class QuickRunAction extends Action {
     }
 
     if(null == imethod) return;
-
+    // TODO: pass the test_desc held in the RunInfo object
+    /*
+     * The previous launch configuration is passed along in the 
+     * sixth parameter to launchMethodConfiguration. Here is why:
+     * QuickRunAction is activated from the FailureTab to re-run failed 
+     * methods. Since a per-method launcher has a different name than any 
+     * other launcher, and often the orginal launcher will have some larger
+     * scope, no match may be found. If a new launcher is created 
+     * from scratch, any jvm args will be lost. This way, such a new 
+     * launcher is created from the previous launcher - the one used to run 
+     * the failed tests - so any jvm args are preserved.
+     */
+    ILaunchConfiguration config = m_previousRun.getLaunchConfiguration();
     LaunchUtil.launchMethodConfiguration(m_javaProject, 
         imethod, 
-        ConfigurationHelper.getComplianceLevel(m_javaProject, m_previousRun.getLaunchConfiguration()), 
-        m_runMode);
+        ConfigurationHelper.getComplianceLevel(m_javaProject, config), 
+        m_runMode, config);
   }
   
 /*  public void run() {

@@ -66,34 +66,53 @@ import org.testng.reporters.FailedReporter;
  */
 public class LaunchUtil {
   private static final List EMPTY_ARRAY_PARAM= new ArrayList();
+  
+  /**
+   * Suite file launcher. The file may reside outside the workbench.
+   */
+  public static void launchFailedSuiteConfiguration(IJavaProject javaProject, 
+		  String runMode) {
+	  launchFailedSuiteConfiguration(javaProject, runMode, null);
+  }
+  
 
   /**
    * Suite file launcher. The file may reside outside the workbench.
    */
-  public static void launchFailedSuiteConfiguration(IJavaProject javaProject, String runMode) {
-    TestNGPlugin plugin= TestNGPlugin.getDefault();
+  public static void launchFailedSuiteConfiguration(IJavaProject javaProject, 
+		  String runMode, ILaunchConfiguration defaultConfig) {
+    // field never read TestNGPlugin plugin= TestNGPlugin.getDefault();
     final String suiteConfName= javaProject.getElementName() + "-" + FailedReporter.TESTNG_FAILED_XML;
     final String suiteFilePath= TestNGPlugin.getPluginPreferenceStore().getOutputAbsolutePath(javaProject).toOSString() + "/" + FailedReporter.TESTNG_FAILED_XML;
     
     launchSuiteConfiguration(javaProject.getProject(),
         suiteConfName,
         suiteFilePath,
-        runMode);
+        runMode, defaultConfig);
   }
   
   /**
    * Suite file launcher. The <code>IFile</code> must exist in the workbench.
    */
   public static void launchSuiteConfiguration(IFile suiteFile, String mode) {
+	  launchSuiteConfiguration(suiteFile, mode, null);
+  }
+  
+  /**
+   * Suite file launcher. The <code>IFile</code> must exist in the workbench.
+   */
+  public static void launchSuiteConfiguration(IFile suiteFile, String mode, ILaunchConfiguration defaultConfig) {
     final IProject project= suiteFile.getProject();
     final String fileConfName= suiteFile.getProjectRelativePath().toString().replace('/', '.');
     final String suitePath= suiteFile.getLocation().toOSString();
 
-    launchSuiteConfiguration(project, fileConfName, suitePath, mode);
+    launchSuiteConfiguration(project, fileConfName, suitePath, mode, defaultConfig);
   }
-
-  private static void launchSuiteConfiguration(IProject project, String fileConfName, String suiteFilePath, String mode) {
-    ILaunchConfigurationWorkingCopy configWC= createLaunchConfiguration(project, fileConfName);
+  
+    
+  private static void launchSuiteConfiguration(IProject project, String fileConfName, String suiteFilePath, 
+		  String mode, ILaunchConfiguration defaultConfig) {
+    ILaunchConfigurationWorkingCopy configWC= createLaunchConfiguration(project, fileConfName, defaultConfig);
 
     configWC.setAttribute(TestNGLaunchConfigurationConstants.SUITE_TEST_LIST,
                           Collections.singletonList(suiteFilePath));
@@ -182,9 +201,17 @@ public class LaunchUtil {
   }
   
   public static void launchMethodConfiguration(IJavaProject javaProject,
+          IMethod imethod,
+          String complianceLevel,
+          String runMode) {
+	  launchMethodConfiguration (javaProject, imethod, complianceLevel, runMode, null);
+  }
+  
+  public static void launchMethodConfiguration(IJavaProject javaProject,
                                                IMethod imethod,
                                                String complianceLevel,
-                                               String runMode) {
+                                               String runMode,
+                                               ILaunchConfiguration defaultConfig) {
     final String confName= imethod.getDeclaringType().getElementName() + "." + imethod.getElementName();
     
     Set/*<String>*/ groups= new HashSet();
@@ -200,7 +227,7 @@ public class LaunchUtil {
       groupDependencyWarning(confName, groups);
     }
 
-    launchMethodBasedConfiguration(javaProject, confName, methods, complianceLevel, runMode);
+    launchMethodBasedConfiguration(javaProject, confName, methods, complianceLevel, runMode, defaultConfig);
   }
  
   /**
@@ -216,8 +243,13 @@ public class LaunchUtil {
             + " which due to a plugin limitation will be ignored", null));
 
   }
-
+  
   private static void launchMethodBasedConfiguration(IJavaProject ijp, String confName, IMethod[] methods, String annotationType, String runMode) {
+	  launchMethodBasedConfiguration(ijp, confName, methods, annotationType, runMode, null);
+  }
+  
+  private static void launchMethodBasedConfiguration(IJavaProject ijp, String confName, 
+		  IMethod[] methods, String annotationType, String runMode, ILaunchConfiguration defaultConfig) {
     Set typesSet= new HashSet();
     for(int i= 0; i < methods.length; i++) {
       typesSet.add(methods[i].getDeclaringType());
@@ -244,8 +276,8 @@ public class LaunchUtil {
     }
     
     final String complianceLevel= annotationType != null ? annotationType : getQuickComplianceLevel(types);
-    
-    ILaunchConfigurationWorkingCopy workingCopy= createLaunchConfiguration(ijp.getProject(), confName);
+  
+    ILaunchConfigurationWorkingCopy workingCopy= createLaunchConfiguration(ijp.getProject(), confName, defaultConfig);
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.CLASS_TEST_LIST,
                              typeNames);
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.METHOD_TEST_LIST,
@@ -354,16 +386,18 @@ public class LaunchUtil {
     
     return haveGroupsDependency(units);
   }
-
+  
   /**
-   * Initialize a <code>ILaunchConfigurationWorkingCopy</code> either by using an existing one (if found)
+   * Initialize a <code>ILaunchConfigurationWorkingCopy</code> either by using an existing one (if found),
+   * or using a default configuration (for example, the one used for the most recent launch), 
    * or by creating a new one based on the <code>project</code> name and the <code>confName</code>.
    * 
    * @throws CoreException if getting an working copy from an existing configuration fails
    */
-  private static ILaunchConfigurationWorkingCopy createLaunchConfiguration(IProject project, String confName) {
+  private static ILaunchConfigurationWorkingCopy createLaunchConfiguration(IProject project, String confName, 
+		  ILaunchConfiguration defaultConfig ) {
     ILaunchManager launchManager= getLaunchManager();
-    ILaunchConfiguration config= ConfigurationHelper.findConfiguration(launchManager, project, confName);
+    ILaunchConfiguration config= ConfigurationHelper.findConfiguration(launchManager, project, confName, defaultConfig);
 
     ILaunchConfigurationWorkingCopy configWC= null;
     if(null != config) {
@@ -380,6 +414,16 @@ public class LaunchUtil {
     }
 
     return configWC;
+  }
+
+  /**
+   * Initialize a <code>ILaunchConfigurationWorkingCopy</code> either by using an existing one (if found)
+   * or by creating a new one based on the <code>project</code> name and the <code>confName</code>.
+   * 
+   * @throws CoreException if getting an working copy from an existing configuration fails
+   */
+  private static ILaunchConfigurationWorkingCopy createLaunchConfiguration(IProject project, String confName) {
+    return createLaunchConfiguration(project, confName, null);
   }
   
   private static void runConfig(ILaunchConfigurationWorkingCopy launchConfiguration, String runMode) {
