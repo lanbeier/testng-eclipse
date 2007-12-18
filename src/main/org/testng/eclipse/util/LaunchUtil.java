@@ -28,6 +28,7 @@ import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.search.internal.ui.text.FileSearchQuery;
 import org.eclipse.search.internal.ui.text.FileSearchResult;
@@ -507,5 +508,49 @@ public class LaunchUtil {
     Object[] elements= result.getElements();
     
     return elements != null && elements.length > 0 ? TestNG.JDK_ANNOTATION_TYPE : TestNG.JAVADOC_ANNOTATION_TYPE;
+  }
+  
+  /**
+   * Create a working copy from the launcher arg, and set a jvm arg with the supplied 
+   * key and value. 
+   * @param key
+   * @param value
+   * @param config
+   * @return
+   */
+  public static ILaunchConfigurationWorkingCopy setJvmArg (String key, String value, ILaunchConfiguration config) {
+	  ILaunchConfigurationWorkingCopy retval = null;
+	  try {
+		    retval = config.getWorkingCopy();
+			String jvmargs = config.getAttribute(
+					IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, "");			
+			String newarg = key + "=\"" + value + "\" ";
+			if (!key.startsWith("-D")) newarg = "-D" + newarg;
+			// if there is no value, then remove this jvm arg if there is one.
+			if (value == "") newarg = " "; 
+			
+			if (jvmargs.equals("")) {
+				// simplest case: set the attribute			
+				retval.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, newarg);
+			}
+			else if (jvmargs.indexOf(key) == -1) {
+				// nothing to replace; just add
+				retval.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, jvmargs + newarg);
+			}
+			else {
+				// find the new arg in the existing jvm args and replace it
+				int start = jvmargs.indexOf(key);
+				int next = jvmargs.indexOf("-D", start + 1);
+				StringBuffer buf = new StringBuffer();
+				buf.append(newarg)
+				.append (jvmargs.substring(0,start));
+				if (next > start) {
+					buf.append(jvmargs.substring(next));
+				}
+				retval.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, buf.toString());
+			}
+		}
+	  catch (CoreException ce) {}
+	  return retval;
   }
 }

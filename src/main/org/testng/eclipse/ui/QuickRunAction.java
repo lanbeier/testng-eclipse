@@ -81,6 +81,7 @@ public class QuickRunAction extends Action {
      * the failed tests - so any jvm args are preserved.
      */
     ILaunchConfiguration config = m_previousRun.getLaunchConfiguration();
+    config = LaunchUtil.setJvmArg(TestNGPlugin.getFailedTestsKey(), m_runInfo.getTestDescription(), config);
     LaunchUtil.launchMethodConfiguration(m_javaProject, 
         imethod, 
         ConfigurationHelper.getComplianceLevel(m_javaProject, config), 
