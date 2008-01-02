@@ -404,44 +404,53 @@ public class ConfigurationHelper {
    */
   public static ILaunchConfiguration findConfiguration(ILaunchManager launchManager, 
 		  IProject project, String confName, ILaunchConfiguration defaultConfiguration) {
-    ILaunchConfigurationType confType = launchManager.getLaunchConfigurationType(TestNGLaunchConfigurationConstants.ID_TESTNG_APPLICATION);;
-    ILaunchConfiguration resultConf = null;
-    
-    try {
-      ILaunchConfiguration[] availConfs = launchManager.getLaunchConfigurations(confType);
-            
-      final String projectName = project.getName();
-      final String mainRunner = TestNGPluginConstants.MAIN_RUNNER;
-      
-      for(int i = 0; i < availConfs.length; i++) {
-        String confProjectName = ConfigurationHelper.getProjectName(availConfs[i]);
-        String confMainName = ConfigurationHelper.getMain(availConfs[i]);
-    
-        if(projectName.equals(confProjectName) && mainRunner.equals(confMainName) &&
-        		confName.equals(availConfs[i].getName())) {       
-                resultConf= availConfs[i];
-                break;       	
-        }
-      }
-      if (resultConf == null && defaultConfiguration != null) {
-      	resultConf = defaultConfiguration.copy(confName);
-      }
-    }
-    catch(CoreException ce) {
-      ; // IGNORE
-    }
-    
-    return resultConf;
-  }
+
+	  ILaunchConfiguration resultConf = null;
+		try {
+			if (defaultConfiguration != null) {
+				resultConf = defaultConfiguration.copy(confName);
+			} else {
+				ILaunchConfigurationType confType = launchManager
+						.getLaunchConfigurationType(TestNGLaunchConfigurationConstants.ID_TESTNG_APPLICATION);
+				;
+
+				ILaunchConfiguration[] availConfs = launchManager
+						.getLaunchConfigurations(confType);
+
+				final String projectName = project.getName();
+				final String mainRunner = TestNGPluginConstants.MAIN_RUNNER;
+
+				for (int i = 0; i < availConfs.length; i++) {
+					String confProjectName = ConfigurationHelper
+							.getProjectName(availConfs[i]);
+					String confMainName = ConfigurationHelper
+							.getMain(availConfs[i]);
+
+					if (projectName.equals(confProjectName)
+							&& mainRunner.equals(confMainName)
+							&& confName.equals(availConfs[i].getName())) {
+						resultConf = availConfs[i];
+						break;
+					}
+				}
+			}
+		} catch (CoreException ce) {
+			; // IGNORE
+		}
+
+		return resultConf;
+	}
 
 
   /**
-   * Looks for an available configuration that matches the project and confName parameters.
-   * @param launchManager
-   * @param project
-   * @param confName
-   * @return
-   */
+	 * Looks for an available configuration that matches the project and
+	 * confName parameters.
+	 * 
+	 * @param launchManager
+	 * @param project
+	 * @param confName
+	 * @return
+	 */
   public static ILaunchConfiguration findConfiguration(ILaunchManager launchManager, IProject project, String confName) {
       return findConfiguration(launchManager, project, confName, null);
   }
