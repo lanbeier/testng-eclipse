@@ -319,6 +319,6 @@ public class TestNGPlugin extends AbstractUIPlugin implements ILaunchListener {
    * @return
    */
   public static String getFailedTestsKey() {
-	  return "failedTests";
+	  return TestNGPluginConstants.S_FAILED_TESTS;
   }
 }
