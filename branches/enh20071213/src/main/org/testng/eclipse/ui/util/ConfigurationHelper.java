@@ -391,7 +391,7 @@ public class ConfigurationHelper {
   
   /**
    * Looks for an available configuration that matches the project and confName parameters.
-   * If an exact match is not found, then the defaultConfiguration is returned. The
+   * If the defaultConfiguration is not null, it is used. The
    * defaultConfiguration may be null, which may cause null to be returned if there is not 
    * an exact match for the project and confName parameters. This method was added to allow
    * the FailureTab to pass along the previous configuration for re-use, so that any jvm args
@@ -405,10 +405,10 @@ public class ConfigurationHelper {
   public static ILaunchConfiguration findConfiguration(ILaunchManager launchManager, 
 		  IProject project, String confName, ILaunchConfiguration defaultConfiguration) {
 
-	  ILaunchConfiguration resultConf = null;
+	    ILaunchConfiguration resultConf = null;
 		try {
 			if (defaultConfiguration != null) {
-				resultConf = defaultConfiguration.copy(confName);
+				resultConf = defaultConfiguration.copy(confName);								
 			} else {
 				ILaunchConfigurationType confType = launchManager
 						.getLaunchConfigurationType(TestNGLaunchConfigurationConstants.ID_TESTNG_APPLICATION);
@@ -437,7 +437,7 @@ public class ConfigurationHelper {
 		} catch (CoreException ce) {
 			; // IGNORE
 		}
-
+		
 		return resultConf;
 	}
 

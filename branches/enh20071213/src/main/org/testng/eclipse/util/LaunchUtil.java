@@ -1,6 +1,7 @@
 package org.testng.eclipse.util;
 
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -519,6 +520,7 @@ public class LaunchUtil {
    * @return
    */
   public static ILaunchConfigurationWorkingCopy setJvmArg (String key, String value, ILaunchConfiguration config) {
+      Object[] args = new Object[]{key, value, config}; 	  
 	  ILaunchConfigurationWorkingCopy retval = null;
 	  try {
 		    retval = config.getWorkingCopy();
@@ -528,7 +530,7 @@ public class LaunchUtil {
 			if (!key.startsWith("-D")) newarg = "-D" + newarg;
 			// if there is no value, then remove this jvm arg if there is one.
 			if (value == "") newarg = " "; 
-			
+			else newarg = " " + newarg;
 			if (jvmargs.equals("")) {
 				// simplest case: set the attribute			
 				retval.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, newarg);

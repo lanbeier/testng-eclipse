@@ -68,7 +68,6 @@ public class QuickRunAction extends Action {
     }
 
     if(null == imethod) return;
-    // TODO: pass the test_desc held in the RunInfo object
     /*
      * The previous launch configuration is passed along in the 
      * sixth parameter to launchMethodConfiguration. Here is why:
