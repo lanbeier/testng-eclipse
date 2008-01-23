@@ -519,8 +519,7 @@ public class LaunchUtil {
    * @param config
    * @return
    */
-  public static ILaunchConfigurationWorkingCopy setJvmArg (String key, String value, ILaunchConfiguration config) {
-      Object[] args = new Object[]{key, value, config}; 	  
+  public static ILaunchConfigurationWorkingCopy setJvmArg (String key, String value, ILaunchConfiguration config) {	  
 	  ILaunchConfigurationWorkingCopy retval = null;
 	  try {
 		    retval = config.getWorkingCopy();

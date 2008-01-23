@@ -103,9 +103,9 @@ public class ConfigurationHelper {
     return getStringAttribute(configuration, IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME);
   }
   
-//  private static List getMethods(ILaunchConfiguration configuration) {
-//    return getListAttribute(configuration, TestNGLaunchConfigurationConstants.METHOD_TEST_LIST);
-//  }
+  public static List getMethods(ILaunchConfiguration configuration) {
+    return getListAttribute(configuration, TestNGLaunchConfigurationConstants.METHOD_TEST_LIST);
+  }
 
   public static String getComplianceLevel(ILaunchConfiguration configuration) {
     return getStringAttribute(configuration, TestNGLaunchConfigurationConstants.TESTNG_COMPLIANCE_LEVEL_ATTR);
