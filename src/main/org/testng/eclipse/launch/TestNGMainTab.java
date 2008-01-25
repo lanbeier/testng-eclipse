@@ -54,6 +54,7 @@ import org.testng.eclipse.util.TestSearchEngine;
 public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 		ILaunchConfigurationTab {
 	private static ImageRegistry m_imageRegistry = null;
+	private static final String UNKNOWN_CONSTANT = "Unknown TestNGLaunchConfigurationConstants: ";
 
 	private Text m_projectText;
 	private IJavaProject m_selectedProject;
@@ -66,6 +67,9 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 	
 	// Suite
 	private TestngTestSelector suiteSelector;
+	
+	// Package
+	private TestngTestSelector packageSelector;
 	
 	private int m_typeOfTestRun = -1;
 
@@ -100,7 +104,7 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 		// classSelector
 		TestngTestSelector.ButtonHandler handler = new TestngTestSelector.ButtonHandler() {
 			public void handleButton() {
-				handleTestClassSearchButtonSelected(Filters.SINGLE_TEST);
+				handleSearchButtonSelected(TestNGLaunchConfigurationConstants.CLASS);
 			};
 		};
 		classSelector = new TestngTestSelector(this, handler,
@@ -118,11 +122,28 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 		groupSelector = new GroupSelector(this, comp);
 		testngTestSelectors.add(groupSelector);
 		
+		//packageSelector
+		handler = new TestngTestSelector.ButtonHandler() {
+			public void handleButton() {
+				handleSearchButtonSelected(TestNGLaunchConfigurationConstants.PACKAGE);
+			};
+		};
+		packageSelector = new TestngTestSelector(this, handler,
+				TestNGLaunchConfigurationConstants.PACKAGE, comp,
+				"TestNGMainTab.label.package") {
+			public void initializeFrom(ILaunchConfiguration configuration) {
+				List packageNames = ConfigurationHelper
+						.getPackages(configuration);
+				setText(Utils.listToString(packageNames));
+			}
+		};
+		testngTestSelectors.add(packageSelector);
+
 
 		// suiteSelector
 		handler = new TestngTestSelector.ButtonHandler() {
 			public void handleButton() {
-				handleSuiteSearchButtonSelected();
+				handleSearchButtonSelected(TestNGLaunchConfigurationConstants.SUITE);				
 			};
 		};
 		
@@ -173,7 +194,9 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 		}
 		
 		suiteSelector = new SuiteSelector(this, handler,comp);
-		testngTestSelectors.add(suiteSelector);		
+		testngTestSelectors.add(suiteSelector);	
+		
+
 	}
 
 	/**
@@ -252,8 +275,10 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 	public void performApply(ILaunchConfigurationWorkingCopy configuration) {
 		ConfigurationHelper.updateLaunchConfiguration(configuration,
 				new ConfigurationHelper.LaunchInfo(m_projectText.getText(),
-						m_typeOfTestRun, Utils.stringToList(classSelector
-								.getText().trim()), m_classMethods, groupSelector.getGroupMap(),
+						m_typeOfTestRun, 
+						Utils.stringToList(classSelector.getText().trim()), 
+						Utils.stringToList(packageSelector.getText().trim()),
+								m_classMethods, groupSelector.getGroupMap(),
 						suiteSelector.getText(), m_complianceLevelCombo
 								.getText(), m_logLevelCombo.getText()));
 	}
@@ -327,64 +352,78 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 
 			return;
 		}
+		
+		if (getType() > -1) {
+			switch (getType()) {
+			case TestNGLaunchConfigurationConstants.CLASS:
+				if (classSelector.getText().trim().length() < 1) {
+					setErrorMessage(ResourceUtil
+							.getString("TestNGMainTab.error.testclassnotdefined")); //$NON-NLS-1$
+				}
+				break;
+			case TestNGLaunchConfigurationConstants.SUITE:
+				if (suiteSelector.getText().trim().length() < 1) {
+					setErrorMessage(ResourceUtil
+							.getString("TestNGMainTab.error.suitenotdefined")); //$NON-NLS-1$
+				}
+				break;
+			case TestNGLaunchConfigurationConstants.GROUP:
+				if (groupSelector.getText().trim().length() < 1) {
+					setErrorMessage(ResourceUtil
+							.getString("TestNGMainTab.error.groupnotdefined")); //$NON-NLS-1$
+				}
+				break;
+			case TestNGLaunchConfigurationConstants.PACKAGE:
+				if (packageSelector.getText().trim().length() < 1) {
+					setErrorMessage(ResourceUtil
+							.getString("TestNGMainTab.error.packagenotdefined")); //$NON-NLS-1$
+				}
+				break;
+			default:
+				throw new IllegalArgumentException(UNKNOWN_CONSTANT + getType());
 
-		if (getType() == TestNGLaunchConfigurationConstants.SUITE) {
-			if (suiteSelector.getText().trim().length() < 1) {
-				setErrorMessage(ResourceUtil
-						.getString("TestNGMainTab.error.suitenotdefined")); //$NON-NLS-1$
 			}
 		}
 
-		if (getType() == TestNGLaunchConfigurationConstants.CLASS) {
-			if (classSelector.getText().trim().length() < 1) {
-				setErrorMessage(ResourceUtil
-						.getString("TestNGMainTab.error.testclassnotdefined")); //$NON-NLS-1$
-			}
-		}
-
-		if (getType() == TestNGLaunchConfigurationConstants.GROUP) {
-			if (groupSelector.getText().trim().length() < 1) {
-				setErrorMessage(ResourceUtil
-						.getString("TestNGMainTab.error.groupnotdefined")); //$NON-NLS-1$
-			}
-		}
 	}
 
-	private void handleSuiteSearchButtonSelected() {
-		handleTestClassSearchButtonSelected(null);
-	}
-
-	private void handleTestClassSearchButtonSelected(Filters.ITypeFilter filter) {
+	// param is one of TestNGLaunchConfigurationConstants.XXX
+	private void handleSearchButtonSelected(int testngType) {
 		Object[] types = new Object[0];
-
+		SelectionDialog dialog = null;
+		
 		try {
-			// Temporary hack to look up test classes or suites.  Eventually, we
-			// should invoke the same method with two different filters.
-			if (null != filter) {
-				types = TestSearchEngine.findTests(
-						getLaunchConfigurationDialog(),
-						new Object[] { m_selectedProject }, filter);
-			} else {
+			switch (testngType) {
+			case TestNGLaunchConfigurationConstants.CLASS:
+				types = TestSearchEngine
+						.findTests(getLaunchConfigurationDialog(),
+								new Object[] { m_selectedProject },
+								Filters.SINGLE_TEST);
+				dialog = TestSelectionDialog.createTestTypeSelectionDialog(
+						getShell(), m_selectedProject, types, Filters.SINGLE_TEST);
+				break;
+			case TestNGLaunchConfigurationConstants.SUITE:
 				types = TestSearchEngine.findSuites(
 						getLaunchConfigurationDialog(),
 						new Object[] { m_selectedProject });
+				dialog = TestSelectionDialog.createSuiteSelectionDialog(getShell(),
+						m_selectedProject, types);
+				break;
+			case TestNGLaunchConfigurationConstants.PACKAGE:
+				types = TestSearchEngine.findPackages(
+						getLaunchConfigurationDialog(),
+						new Object[] { m_selectedProject });
+				dialog = TestSelectionDialog.createPackageSelectionDialog(getShell(),
+						m_selectedProject, types);
+				break;
+			default:
+				throw new IllegalArgumentException(UNKNOWN_CONSTANT + testngType);
 			}
 		} catch (InterruptedException e) {
 			TestNGPlugin.log(e);
 		} catch (InvocationTargetException e) {
 			TestNGPlugin.log(e.getTargetException());
 		}
-
-		SelectionDialog dialog = null;
-
-		if (null != filter) {
-			dialog = TestSelectionDialog.createTestTypeSelectionDialog(
-					getShell(), m_selectedProject, types, filter);
-		} else {
-			dialog = TestSelectionDialog.createSuiteSelectionDialog(getShell(),
-					m_selectedProject, types);
-		}
-
 		dialog.setBlockOnOpen(true);
 		dialog.setTitle(ResourceUtil
 				.getString("TestNGMainTab.testdialog.title")); //$NON-NLS-1$
@@ -399,18 +438,25 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 		Object type = results[0];
 
 		if (type != null) {
-			if (type instanceof IType) {
+			switch (testngType) {
+			case TestNGLaunchConfigurationConstants.CLASS:
 				classSelector.setText((((IType) type).getFullyQualifiedName())
 						.trim());
 				m_selectedProject = ((IType) type).getJavaProject();
-			} else if (type instanceof IFile) {
+				break;
+			case TestNGLaunchConfigurationConstants.SUITE:
 				IFile file = (IFile) type;
 				suiteSelector.setText(file.getProjectRelativePath()
 						.toOSString().trim());
+				break;
+			case TestNGLaunchConfigurationConstants.PACKAGE:
+				packageSelector.setText((String)type);
+				break;
+		    default:
+		    	throw new IllegalArgumentException(UNKNOWN_CONSTANT + testngType);
 			}
-			m_projectText.setText(m_selectedProject.getElementName());
 		}
-
+							
 		updateDialog();
 	}
 

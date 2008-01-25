@@ -36,6 +36,7 @@ public class ConfigurationHelper {
     public String m_projectName;
     public int m_launchType;
     public Collection/*<String>*/ m_classNames;
+    public Collection/*<String>*/ m_packageNames;
     public Map/*<String, List<String>*/ classMethods;
     public String m_suiteName;
     public Map m_groupMap;
@@ -44,7 +45,8 @@ public class ConfigurationHelper {
     
     public LaunchInfo(String projectName,
                       int launchType,
-                      Collection classNames,
+                      Collection/*<String>*/ classNames,
+                      Collection/*<String>*/ packageNames,
                       Map classMethodsMap,
                       Map groupMap,
                       String suiteName,
@@ -58,6 +60,7 @@ public class ConfigurationHelper {
       m_suiteName= suiteName.trim();
       m_complianceLevel= complianceLevel;
       m_logLevel= logLevel;
+      m_packageNames = packageNames;
     }
   }
 
@@ -86,6 +89,10 @@ public class ConfigurationHelper {
   public static List getClasses(ILaunchConfiguration config) {
     return getListAttribute(config, TestNGLaunchConfigurationConstants.CLASS_TEST_LIST);
   }
+  
+  public static List getPackages(ILaunchConfiguration config) {
+	    return getListAttribute(config, TestNGLaunchConfigurationConstants.PACKAGE_TEST_LIST);
+	  }
   
   public static List getSuites(ILaunchConfiguration config) {
     return getListAttribute(config, TestNGLaunchConfigurationConstants.SUITE_TEST_LIST);
@@ -501,6 +508,10 @@ public class ConfigurationHelper {
         classNamesList.add(cls);
       }
     }
+    List packageList = new ArrayList();
+    if (launchInfo.m_packageNames != null) {
+    	packageList.addAll(launchInfo.m_packageNames);
+    }    
     if(null != launchInfo.classMethods) {
       classMethods.putAll(launchInfo.classMethods);
     }
@@ -512,6 +523,8 @@ public class ConfigurationHelper {
                                RemoteTestNG.class.getName());
     configuration.setAttribute(TestNGLaunchConfigurationConstants.CLASS_TEST_LIST,
                                classNamesList);
+    configuration.setAttribute(TestNGLaunchConfigurationConstants.PACKAGE_TEST_LIST,
+    		packageList);
     configuration.setAttribute(TestNGLaunchConfigurationConstants.GROUP_LIST,
                                new ArrayList(launchInfo.m_groupMap.keySet()));
     configuration.setAttribute(TestNGLaunchConfigurationConstants.GROUP_CLASS_LIST,
@@ -524,5 +537,6 @@ public class ConfigurationHelper {
                                launchInfo.m_complianceLevel);
     configuration.setAttribute(TestNGLaunchConfigurationConstants.LOG_LEVEL,
                                launchInfo.m_logLevel);
+    
   }
 }

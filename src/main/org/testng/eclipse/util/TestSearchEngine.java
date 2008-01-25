@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.IPackageDeclaration;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IParent;
 import org.eclipse.jdt.core.ISourceReference;
@@ -69,6 +70,24 @@ public class TestSearchEngine {
 
     return (IType[]) result.toArray(new IType[result.size()]);
   }
+  
+  public static String[] findPackages(IRunnableContext context,
+			final Object[] elements)
+			throws InvocationTargetException, InterruptedException {
+		final Set result = new HashSet();
+
+		if (elements.length != 0) {
+			IRunnableWithProgress runnable = new IRunnableWithProgress() {
+				public void run(IProgressMonitor pm)
+						throws InterruptedException {
+					doFindPackages(elements, result, pm);
+				}
+			};
+			context.run(true, true, runnable);
+		}
+
+		return (String[]) result.toArray(new String[result.size()]);
+	}
 
   public static File[] findSuites(IRunnableContext context,
                                   final Object[] elements) throws InvocationTargetException, InterruptedException {
@@ -117,6 +136,23 @@ public class TestSearchEngine {
 
     return (IType[]) result.toArray(new IType[result.size()]);
   }
+  
+  public static IType[] findPackages(final Object[] elements)
+  throws InvocationTargetException, InterruptedException {
+    final Set result = new HashSet();
+
+    if(elements.length > 0) {
+      IRunnableWithProgress runnable = new IRunnableWithProgress() {
+          public void run(IProgressMonitor pm) throws InterruptedException {
+            doFindPackages(elements, result, pm);
+          }
+        };
+      PlatformUI.getWorkbench().getProgressService().busyCursorWhile(runnable);
+    }
+
+    return (IType[]) result.toArray(new IType[result.size()]);
+  }
+  
 
   private static Map/*<IJavaElement,Boolean>*/ s_isTestCache= new HashMap();
   
@@ -199,6 +235,29 @@ public class TestSearchEngine {
       pm.done();
     }
   }
+  
+  private static void doFindPackages(Object[] elements, Set result,
+			IProgressMonitor pm)
+			throws InterruptedException {
+		int nElements = elements.length;
+		pm.beginTask(ResourceUtil
+				.getString("TestSearchEngine.message.searching"), nElements); //$NON-NLS-1$
+		try {
+			for (int i = 0; i < nElements; i++) {
+
+				if (elements[i] instanceof IJavaElement) {
+					findPackages(((IJavaElement) elements[i]).getJavaProject(),
+							result);
+				}
+
+				if (pm.isCanceled()) {
+					throw new InterruptedException();
+				}
+			}
+		} finally {
+			pm.done();
+		}
+	}
 
   private static boolean isTestNgXmlFile(IFile f) {
     if(!"xml".equals(f.getFileExtension())) {
@@ -298,6 +357,8 @@ public class TestSearchEngine {
       pm.done();
     }
   }
+  
+
 
 
   private static void findTestTypes(IJavaElement ije, 
@@ -345,6 +406,43 @@ public class TestSearchEngine {
       }
     }
   }
+  
+  private static void findPackages(IJavaElement ije, Set result) {
+		if (IJavaElement.PACKAGE_FRAGMENT > ije.getElementType()) {
+			try {
+				IJavaElement[] children = ((IParent) ije).getChildren();
+
+				for (int i = 0; i < children.length; i++) {
+					findPackages(children[i], result);
+				}
+			} catch (JavaModelException jme) {
+				TestNGPlugin.log(jme);
+			}
+		}
+
+		if (IJavaElement.PACKAGE_FRAGMENT == ije.getElementType()) {
+			try {
+				ICompilationUnit[] compilationUnits = ((IPackageFragment) ije)
+						.getCompilationUnits();
+
+				for (int i = 0; i < compilationUnits.length; i++) {
+					findPackages(compilationUnits[i], result);
+				}
+			} catch (JavaModelException jme) {
+				TestNGPlugin.log(jme);
+			}
+
+		}
+
+		if (IJavaElement.COMPILATION_UNIT == ije.getElementType()) {
+			try {
+				IPackageDeclaration[] pkg = ((ICompilationUnit)ije).getPackageDeclarations();
+				result.add(pkg[0].getElementName()); // classes usually belong to exactly one package
+			} catch (JavaModelException jme) {
+				TestNGPlugin.log(jme);
+			}
+		}
+	}
 
 
   private static Object computeScope(Object element) throws JavaModelException {
