@@ -16,7 +16,6 @@ import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.dialogs.SelectionStatusDialog;
 import org.testng.eclipse.TestNGPlugin;
-import org.testng.eclipse.launch.TestngTestSelector.ButtonHandler;
 import org.testng.eclipse.launch.components.CheckBoxTable;
 import org.testng.eclipse.launch.components.Filters;
 import org.testng.eclipse.launch.components.ITestContent;
@@ -27,8 +26,8 @@ import org.testng.eclipse.util.JDTUtil;
 import org.testng.eclipse.util.TestSearchEngine;
 
 public class GroupSelector extends TestngTestSelector  {
+	
 	private Map m_groupMap = new HashMap();
-	private List m_groupNames = new ArrayList();
 
 	GroupSelector(TestNGMainTab callback, Composite comp) {
 		super();
