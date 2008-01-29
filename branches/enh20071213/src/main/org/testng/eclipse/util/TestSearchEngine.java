@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.ISourceReference;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.internal.core.SourceMethod;
 import org.eclipse.jface.operation.IRunnableContext;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.ui.PlatformUI;
@@ -87,6 +88,24 @@ public class TestSearchEngine {
 		}
 
 		return (String[]) result.toArray(new String[result.size()]);
+	}
+  
+  public static String[] findMethods(IRunnableContext context,
+			final Object[] elements)
+			throws InvocationTargetException, InterruptedException {
+		final Set result = new HashSet();
+
+		if (elements.length != 0) {
+			IRunnableWithProgress runnable = new IRunnableWithProgress() {
+				public void run(IProgressMonitor pm)
+						throws InterruptedException {
+					doFindMethods(elements, result, pm);
+				}
+			};
+			context.run(true, true, runnable);
+		}
+
+		return (String[])result.toArray(new String[result.size()]);
 	}
 
   public static File[] findSuites(IRunnableContext context,
@@ -258,7 +277,28 @@ public class TestSearchEngine {
 			pm.done();
 		}
 	}
-
+  private static void doFindMethods(Object[] elements, Set result,
+			IProgressMonitor pm)
+			throws InterruptedException {
+		int nElements = elements.length;
+		pm.beginTask(ResourceUtil
+				.getString("TestSearchEngine.message.searching"), nElements); //$NON-NLS-1$
+		try {
+			for (int i = 0; i < nElements; i++) {
+                
+				if (elements[i] instanceof IJavaElement) {
+					findMethods(((IJavaElement) elements[i]).getJavaProject(),
+							result);
+				}
+               
+				if (pm.isCanceled()) {
+					throw new InterruptedException();
+				}
+			}
+		} finally {
+			pm.done();
+		}
+	}
   private static boolean isTestNgXmlFile(IFile f) {
     if(!"xml".equals(f.getFileExtension())) {
       return false;
@@ -434,16 +474,84 @@ public class TestSearchEngine {
 
 		}
 
-		if (IJavaElement.COMPILATION_UNIT == ije.getElementType()) {
+	    if(IJavaElement.COMPILATION_UNIT == ije.getElementType()) {
+	        try {
+	          IType[] types = ((ICompilationUnit) ije).getAllTypes();
+
+	          for(int i = 0; i < types.length; i++) {
+	            if(Filters.SINGLE_TEST.accept(types[i])) {
+	              
+	            }
+	          }
+	        }
+	        catch(JavaModelException jme) {
+	          TestNGPlugin.log(jme);
+	        }
+	      }
+	}
+  
+  // TODO   
+  private static void findMethods(IJavaElement ije, Set result) {
+		if (IJavaElement.PACKAGE_FRAGMENT > ije.getElementType()) {
 			try {
-				IPackageDeclaration[] pkg = ((ICompilationUnit)ije).getPackageDeclarations();
-				result.add(pkg[0].getElementName()); // classes usually belong to exactly one package
+				IJavaElement[] children = ((IParent) ije).getChildren();
+				if (children.length == 0) {return;}
+				for (int i = 0; i < children.length; i++) {
+					findMethods(children[i], result);
+				}
 			} catch (JavaModelException jme) {
 				TestNGPlugin.log(jme);
 			}
 		}
-	}
 
+		if (IJavaElement.PACKAGE_FRAGMENT == ije.getElementType()) {
+			try {
+				ICompilationUnit[] compilationUnits = ((IPackageFragment) ije)
+						.getCompilationUnits();
+
+				if (compilationUnits.length == 0) {return;}
+				for (int i = 0; i < compilationUnits.length; i++) {
+					findMethods(compilationUnits[i], result);
+				}
+				
+			} catch (JavaModelException jme) {
+				TestNGPlugin.log(jme);
+			}
+		}
+
+		if (IJavaElement.COMPILATION_UNIT == ije.getElementType()) {
+			try {
+				IType[] types = ((ICompilationUnit) ije).getAllTypes();
+
+				for (int i = 0; i < types.length; i++) {
+					IType classType;
+					if (Filters.SINGLE_TEST.accept(types[i])) {
+						if (IJavaElement.TYPE == types[i].getElementType()) {
+							classType = (IType)types[i];
+						}
+						else if (IJavaElement.CLASS_FILE == types[i].getElementType()) {
+							classType = ((IClassFile)types[i]).findPrimaryType();
+						}
+						else {
+							classType = null;
+						}
+						
+						if (classType != null) {
+							IMethod[] methods = classType.getMethods();
+							for (int j = 0; j < methods.length; j++) {
+								if (TypeParser.parseType(classType).isTestMethod(methods[j])) {
+									result.add(methods[j].getDeclaringType().getFullyQualifiedName() + "." + methods[j].getElementName());									
+								}
+							}
+						}					
+					}
+				}
+			} catch (JavaModelException jme) {
+				TestNGPlugin.log(jme);
+			}
+		}								
+	}
+  
 
   private static Object computeScope(Object element) throws JavaModelException {
     if(element instanceof IResource) {

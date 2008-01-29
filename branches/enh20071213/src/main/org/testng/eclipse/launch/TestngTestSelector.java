@@ -38,6 +38,8 @@ public abstract class TestngTestSelector {
 
 		init(callback, buttonHandler, testngType, comp, labelKey);
 	}
+	
+	
 
 	public void attachModificationListener() {
 		text.addModifyListener(textAdapter);

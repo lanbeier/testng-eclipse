@@ -93,32 +93,41 @@ public class TestSelectionDialog extends TwoPaneElementSelector {
 	public static TestSelectionDialog createTestTypeSelectionDialog(
 			final Shell shell, final IJavaProject jproject,
 			final Object[] types, final Filters.ITypeFilter filter) {
-		TestSelectionDialog result = new TestSelectionDialog(shell,
-				TestNGLaunchConfigurationConstants.CLASS, jproject,
-				new JavaElementLabelProvider(
-						JavaElementLabelProvider.SHOW_BASICS
-								| JavaElementLabelProvider.SHOW_OVERLAY_ICONS),
-				new PackageRenderer(), types, filter);
-
-		result.setMessage(ResourceUtil
-				.getString("TestNGMainTab.testdialog.selectTestClass")); //$NON-NLS-1$
-
-		return result;
+		return createJavaElementDialog (shell, jproject, types,
+				TestNGLaunchConfigurationConstants.CLASS, 
+				"TestNGMainTab.testdialog.selectTestClass", filter);
 	}
 
 	public static TestSelectionDialog createPackageSelectionDialog(
 			final Shell shell, final IJavaProject jproject, final Object[] types) {
+		return createJavaElementDialog (shell, jproject, types,
+				TestNGLaunchConfigurationConstants.PACKAGE, 
+				"TestNGMainTab.testdialog.selectPackage", null);
+	}
+	
+	public static TestSelectionDialog createMethodSelectionDialog(
+			final Shell shell, final IJavaProject jproject, final Object[] types) {
+		return createJavaElementDialog (shell, jproject, types,
+				TestNGLaunchConfigurationConstants.METHOD, 
+				"TestNGMainTab.testdialog.selectMethod", null);
+	}
+	
+	
+	private static TestSelectionDialog createJavaElementDialog(final Shell shell, 
+			final IJavaProject jproject, final Object[] types, 
+			final int testngType, final String title, final Filters.ITypeFilter filter
+			) {
 		TestSelectionDialog result = new TestSelectionDialog(shell,
-				TestNGLaunchConfigurationConstants.PACKAGE, jproject,
+				testngType, jproject,
 				new JavaElementLabelProvider(
 						JavaElementLabelProvider.SHOW_BASICS
 								| JavaElementLabelProvider.SHOW_OVERLAY_ICONS),
-				new PackageRenderer(), types, null);
-
+				new PackageRenderer(), types, filter);
 		result.setMessage(ResourceUtil
-				.getString("TestNGMainTab.testdialog.selectPackage")); //$NON-NLS-1$
-
+				.getString(title));
 		return result;
+		
+		
 	}
 
 	private TestSelectionDialog(final Shell shell, final int type,

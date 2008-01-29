@@ -2,6 +2,7 @@ package org.testng.eclipse.launch;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.eclipse.debug.ui.ILaunchConfigurationDialog;
 import org.eclipse.debug.ui.ILaunchConfigurationTab;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.internal.core.SourceMethod;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
@@ -62,22 +64,25 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 	// Single test class
 	private TestngTestSelector classSelector;
 
+	//method
+	TestngTestSelector methodSelector;
+
 	// Group
 	private GroupSelector groupSelector;
-	
+
 	// Suite
 	private TestngTestSelector suiteSelector;
-	
+
 	// Package
 	private TestngTestSelector packageSelector;
-	
+
 	private int m_typeOfTestRun = -1;
 
 	// Runtime group
 	private Combo m_complianceLevelCombo;
 	private Combo m_logLevelCombo;
-	
-	private List/*<TestngTestSelector>*/testngTestSelectors = new ArrayList/*<TestngTestSelector>*/();;
+
+	private List/*<TestngTestSelector>*/testngTestSelectors = new ArrayList/*<TestngTestSelector>*/();
 	private Map/*<String, List<String>>*/m_classMethods;
 
 	/**
@@ -108,20 +113,37 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 			};
 		};
 		classSelector = new TestngTestSelector(this, handler,
-				TestNGLaunchConfigurationConstants.CLASS, comp, 
+				TestNGLaunchConfigurationConstants.CLASS, comp,
 				"TestNGMainTab.label.test") {
-			public void initializeFrom (ILaunchConfiguration configuration) {
-				List testClassNames = ConfigurationHelper.getClasses(configuration);
+			public void initializeFrom(ILaunchConfiguration configuration) {
+				List testClassNames = ConfigurationHelper
+						.getClasses(configuration);
 				setText(Utils.listToString(testClassNames));
 			}
 		};
 		testngTestSelectors.add(classSelector);
 
-		
+		// methodSelector
+		handler = new TestngTestSelector.ButtonHandler() {
+			public void handleButton() {
+				handleSearchButtonSelected(TestNGLaunchConfigurationConstants.METHOD);
+			};
+		};
+
+		methodSelector = new TestngTestSelector(this, handler,
+				TestNGLaunchConfigurationConstants.METHOD, comp,
+				"TestNGMainTab.label.method") {
+			public void initializeFrom(ILaunchConfiguration configuration) {
+				List names = ConfigurationHelper.getMethods(configuration);
+				setText(Utils.listToString(names));
+			}
+		};
+		testngTestSelectors.add(methodSelector);
+
 		// groupSelector
 		groupSelector = new GroupSelector(this, comp);
 		testngTestSelectors.add(groupSelector);
-		
+
 		//packageSelector
 		handler = new TestngTestSelector.ButtonHandler() {
 			public void handleButton() {
@@ -132,30 +154,29 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 				TestNGLaunchConfigurationConstants.PACKAGE, comp,
 				"TestNGMainTab.label.package") {
 			public void initializeFrom(ILaunchConfiguration configuration) {
-				List packageNames = ConfigurationHelper
-						.getPackages(configuration);
-				setText(Utils.listToString(packageNames));
+				List names = ConfigurationHelper.getPackages(configuration);
+				setText(Utils.listToString(names));
 			}
 		};
 		testngTestSelectors.add(packageSelector);
 
-
 		// suiteSelector
 		handler = new TestngTestSelector.ButtonHandler() {
 			public void handleButton() {
-				handleSearchButtonSelected(TestNGLaunchConfigurationConstants.SUITE);				
+				handleSearchButtonSelected(TestNGLaunchConfigurationConstants.SUITE);
 			};
 		};
-		
+
 		class SuiteSelector extends TestngTestSelector {
-			
+
 			private Button m_suiteBrowseButton;
-			
-			SuiteSelector (TestNGMainTab callback, ButtonHandler handler,Composite comp) {
-				super(callback, handler, 
+
+			SuiteSelector(TestNGMainTab callback, ButtonHandler handler,
+					Composite comp) {
+				super(callback, handler,
 						TestNGLaunchConfigurationConstants.SUITE, comp,
 						"TestNGMainTab.label.suiteTest");
-					
+
 				Composite fill = new Composite(comp, SWT.NONE);
 				GridData gd = new GridData(GridData.HORIZONTAL_ALIGN_FILL);
 				gd.horizontalSpan = 2;
@@ -169,33 +190,32 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 				m_suiteBrowseButton = new Button(comp, SWT.PUSH);
 				m_suiteBrowseButton.setText(ResourceUtil
 						.getString("TestNGMainTab.label.browsefs")); //$NON-NLS-1$
-				
-				
+
 				TestngTestSelector.ButtonHandler buttonHandler = new TestngTestSelector.ButtonHandler() {
 					public void handleButton() {
-						FileDialog fileDialog = new FileDialog(m_suiteBrowseButton
-								.getShell(), SWT.OPEN);
+						FileDialog fileDialog = new FileDialog(
+								m_suiteBrowseButton.getShell(), SWT.OPEN);
 						setText(fileDialog.open());
 					}
 				};
-				ButtonAdapter adapter = new ButtonAdapter(getTestngType(), buttonHandler);
-			
+				ButtonAdapter adapter = new ButtonAdapter(getTestngType(),
+						buttonHandler);
+
 				m_suiteBrowseButton.addSelectionListener(adapter);
 				gd = new GridData();
 				gd.verticalIndent = 0;
 				m_suiteBrowseButton.setLayoutData(gd);
 
 			}
-			
-			public void initializeFrom (ILaunchConfiguration configuration) {
+
+			public void initializeFrom(ILaunchConfiguration configuration) {
 				List suites = ConfigurationHelper.getSuites(configuration);
 				setText(Utils.listToString(suites));
 			}
 		}
-		
-		suiteSelector = new SuiteSelector(this, handler,comp);
-		testngTestSelectors.add(suiteSelector);	
-		
+
+		suiteSelector = new SuiteSelector(this, handler, comp);
+		testngTestSelectors.add(suiteSelector);
 
 	}
 
@@ -275,10 +295,10 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 	public void performApply(ILaunchConfigurationWorkingCopy configuration) {
 		ConfigurationHelper.updateLaunchConfiguration(configuration,
 				new ConfigurationHelper.LaunchInfo(m_projectText.getText(),
-						m_typeOfTestRun, 
-						Utils.stringToList(classSelector.getText().trim()), 
+						m_typeOfTestRun, Utils.stringToList(classSelector
+								.getText().trim()),
 						Utils.stringToList(packageSelector.getText().trim()),
-								m_classMethods, groupSelector.getGroupMap(),
+						m_classMethods, groupSelector.getGroupMap(),
 						suiteSelector.getText(), m_complianceLevelCombo
 								.getText(), m_logLevelCombo.getText()));
 	}
@@ -352,7 +372,7 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 
 			return;
 		}
-		
+
 		if (getType() > -1) {
 			switch (getType()) {
 			case TestNGLaunchConfigurationConstants.CLASS:
@@ -367,6 +387,12 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 							.getString("TestNGMainTab.error.suitenotdefined")); //$NON-NLS-1$
 				}
 				break;
+			case TestNGLaunchConfigurationConstants.METHOD:
+				if (methodSelector.getText().trim().length() < 1) {
+					setErrorMessage(ResourceUtil
+							.getString("TestNGMainTab.error.methodnotdefined")); //$NON-NLS-1$
+				}
+				break;	
 			case TestNGLaunchConfigurationConstants.GROUP:
 				if (groupSelector.getText().trim().length() < 1) {
 					setErrorMessage(ResourceUtil
@@ -387,11 +413,14 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 
 	}
 
-	// param is one of TestNGLaunchConfigurationConstants.XXX
-	private void handleSearchButtonSelected(int testngType) {
+	/**
+	 * Package access for callbacks.
+	 * @param testngType - one of TestNGLaunchConfigurationConstants
+	 */
+	void handleSearchButtonSelected(int testngType) {
 		Object[] types = new Object[0];
 		SelectionDialog dialog = null;
-		
+
 		try {
 			switch (testngType) {
 			case TestNGLaunchConfigurationConstants.CLASS:
@@ -400,24 +429,33 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 								new Object[] { m_selectedProject },
 								Filters.SINGLE_TEST);
 				dialog = TestSelectionDialog.createTestTypeSelectionDialog(
-						getShell(), m_selectedProject, types, Filters.SINGLE_TEST);
+						getShell(), m_selectedProject, types,
+						Filters.SINGLE_TEST);
+				break;
+			case TestNGLaunchConfigurationConstants.METHOD:
+				types = TestSearchEngine.findMethods(
+						getLaunchConfigurationDialog(),
+						new Object[] { m_selectedProject });
+				dialog = TestSelectionDialog.createMethodSelectionDialog(
+						getShell(), m_selectedProject, types);
 				break;
 			case TestNGLaunchConfigurationConstants.SUITE:
 				types = TestSearchEngine.findSuites(
 						getLaunchConfigurationDialog(),
 						new Object[] { m_selectedProject });
-				dialog = TestSelectionDialog.createSuiteSelectionDialog(getShell(),
-						m_selectedProject, types);
+				dialog = TestSelectionDialog.createSuiteSelectionDialog(
+						getShell(), m_selectedProject, types);
 				break;
 			case TestNGLaunchConfigurationConstants.PACKAGE:
 				types = TestSearchEngine.findPackages(
 						getLaunchConfigurationDialog(),
 						new Object[] { m_selectedProject });
-				dialog = TestSelectionDialog.createPackageSelectionDialog(getShell(),
-						m_selectedProject, types);
+				dialog = TestSelectionDialog.createPackageSelectionDialog(
+						getShell(), m_selectedProject, types);
 				break;
 			default:
-				throw new IllegalArgumentException(UNKNOWN_CONSTANT + testngType);
+				throw new IllegalArgumentException(UNKNOWN_CONSTANT
+						+ testngType);
 			}
 		} catch (InterruptedException e) {
 			TestNGPlugin.log(e);
@@ -444,19 +482,32 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 						.trim());
 				m_selectedProject = ((IType) type).getJavaProject();
 				break;
+			case TestNGLaunchConfigurationConstants.METHOD:
+				String fullName = ((String)type);
+				int index = fullName.lastIndexOf('.');
+				String className = fullName.substring(0, index);
+				String methodName = fullName.substring(index + 1);
+				classSelector.setText(className);
+				methodSelector.setText(methodName);
+				m_classMethods = new HashMap();
+				List methods = new ArrayList();
+				methods.add(methodName);
+				m_classMethods.put(className, methods); // TODO??
+				break;
 			case TestNGLaunchConfigurationConstants.SUITE:
 				IFile file = (IFile) type;
 				suiteSelector.setText(file.getProjectRelativePath()
 						.toOSString().trim());
 				break;
 			case TestNGLaunchConfigurationConstants.PACKAGE:
-				packageSelector.setText((String)type);
+				packageSelector.setText((String) type);
 				break;
-		    default:
-		    	throw new IllegalArgumentException(UNKNOWN_CONSTANT + testngType);
+			default:
+				throw new IllegalArgumentException(UNKNOWN_CONSTANT
+						+ testngType);
 			}
 		}
-							
+
 		updateDialog();
 	}
 
@@ -591,7 +642,7 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 		if (type != m_typeOfTestRun) {
 			//      ppp("SET TYPE TO " + type + " (WAS " + m_typeOfTestRun + ")");
 			m_typeOfTestRun = type;
-			m_classMethods = null; // we reset it here, because the user has changed settings on front page
+			//////m_classMethods = null; // we reset it here, because the user has changed settings on front page
 			for (Iterator it = testngTestSelectors.iterator(); it.hasNext();) {
 				TestngTestSelector sel = (TestngTestSelector) it.next();
 				boolean select = (type == sel.getTestngType());
@@ -614,15 +665,15 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 	public static void ppp(String s) {
 		System.out.println("[TestNGMainTab] " + s);
 	}
-	
+
 	public IJavaProject getSelectedProject() {
 		return m_selectedProject;
 	}
-	
+
 	protected Shell getShell() {
 		return super.getShell();
 	}
-	
+
 	protected ILaunchConfigurationDialog getLaunchConfigurationDialog() {
 		return super.getLaunchConfigurationDialog();
 	}
