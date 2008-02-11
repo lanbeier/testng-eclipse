@@ -15,7 +15,6 @@ import org.eclipse.debug.ui.ILaunchConfigurationDialog;
 import org.eclipse.debug.ui.ILaunchConfigurationTab;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.internal.core.SourceMethod;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
@@ -433,9 +432,11 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 						Filters.SINGLE_TEST);
 				break;
 			case TestNGLaunchConfigurationConstants.METHOD:
+				
 				types = TestSearchEngine.findMethods(
 						getLaunchConfigurationDialog(),
-						new Object[] { m_selectedProject });
+						new Object[] { m_selectedProject }, 
+						classSelector.getText());
 				dialog = TestSelectionDialog.createMethodSelectionDialog(
 						getShell(), m_selectedProject, types);
 				break;
@@ -492,7 +493,7 @@ public class TestNGMainTab extends AbstractLaunchConfigurationTab implements
 				m_classMethods = new HashMap();
 				List methods = new ArrayList();
 				methods.add(methodName);
-				m_classMethods.put(className, methods); // TODO??
+				m_classMethods.put(className, methods); 
 				break;
 			case TestNGLaunchConfigurationConstants.SUITE:
 				IFile file = (IFile) type;

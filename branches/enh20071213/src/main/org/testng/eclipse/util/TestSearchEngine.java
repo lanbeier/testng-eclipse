@@ -24,14 +24,12 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
-import org.eclipse.jdt.core.IPackageDeclaration;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IParent;
 import org.eclipse.jdt.core.ISourceReference;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.internal.core.SourceMethod;
 import org.eclipse.jface.operation.IRunnableContext;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.ui.PlatformUI;
@@ -91,7 +89,7 @@ public class TestSearchEngine {
 	}
   
   public static String[] findMethods(IRunnableContext context,
-			final Object[] elements)
+			final Object[] elements, final String className)
 			throws InvocationTargetException, InterruptedException {
 		final Set result = new HashSet();
 
@@ -99,7 +97,7 @@ public class TestSearchEngine {
 			IRunnableWithProgress runnable = new IRunnableWithProgress() {
 				public void run(IProgressMonitor pm)
 						throws InterruptedException {
-					doFindMethods(elements, result, pm);
+					doFindMethods(elements, result, pm, className);
 				}
 			};
 			context.run(true, true, runnable);
@@ -278,7 +276,7 @@ public class TestSearchEngine {
 		}
 	}
   private static void doFindMethods(Object[] elements, Set result,
-			IProgressMonitor pm)
+			IProgressMonitor pm, String className)
 			throws InterruptedException {
 		int nElements = elements.length;
 		pm.beginTask(ResourceUtil
@@ -288,7 +286,7 @@ public class TestSearchEngine {
                 
 				if (elements[i] instanceof IJavaElement) {
 					findMethods(((IJavaElement) elements[i]).getJavaProject(),
-							result);
+							result, className);
 				}
                
 				if (pm.isCanceled()) {
@@ -490,14 +488,14 @@ public class TestSearchEngine {
 	      }
 	}
   
-  // TODO   
-  private static void findMethods(IJavaElement ije, Set result) {
+
+  private static void findMethods(IJavaElement ije, Set result, String className) {
 		if (IJavaElement.PACKAGE_FRAGMENT > ije.getElementType()) {
 			try {
 				IJavaElement[] children = ((IParent) ije).getChildren();
 				if (children.length == 0) {return;}
 				for (int i = 0; i < children.length; i++) {
-					findMethods(children[i], result);
+					findMethods(children[i], result, className);
 				}
 			} catch (JavaModelException jme) {
 				TestNGPlugin.log(jme);
@@ -511,7 +509,7 @@ public class TestSearchEngine {
 
 				if (compilationUnits.length == 0) {return;}
 				for (int i = 0; i < compilationUnits.length; i++) {
-					findMethods(compilationUnits[i], result);
+					findMethods(compilationUnits[i], result, className);
 				}
 				
 			} catch (JavaModelException jme) {
@@ -537,10 +535,12 @@ public class TestSearchEngine {
 						}
 						
 						if (classType != null) {
-							IMethod[] methods = classType.getMethods();
-							for (int j = 0; j < methods.length; j++) {
-								if (TypeParser.parseType(classType).isTestMethod(methods[j])) {
-									result.add(methods[j].getDeclaringType().getFullyQualifiedName() + "." + methods[j].getElementName());									
+							if (className.equals("") || classType.getFullyQualifiedName().equals(className)) {
+								IMethod[] methods = classType.getMethods();
+								for (int j = 0; j < methods.length; j++) {
+									if (TypeParser.parseType(classType).isTestMethod(methods[j])) {
+										result.add(methods[j].getDeclaringType().getFullyQualifiedName() + "." + methods[j].getElementName());									
+									}
 								}
 							}
 						}					

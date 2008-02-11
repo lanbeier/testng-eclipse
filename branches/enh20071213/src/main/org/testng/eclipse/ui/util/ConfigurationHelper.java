@@ -21,6 +21,7 @@ import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.testng.eclipse.TestNGPlugin;
 import org.testng.eclipse.TestNGPluginConstants;
 import org.testng.eclipse.launch.TestNGLaunchConfigurationConstants;
+import org.testng.eclipse.ui.RunInfo;
 import org.testng.eclipse.util.JDTUtil;
 import org.testng.eclipse.util.SuiteGenerator;
 import org.testng.remote.RemoteTestNG;
@@ -127,6 +128,26 @@ public class ConfigurationHelper {
     
     return result;
   }
+  
+  public static String getJvmArgs(ILaunchConfiguration configuration) {
+		if (configuration == null)
+			return null;
+		try {
+			return configuration.getAttribute(
+					IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, "");
+		} catch (CoreException e) {
+			e.printStackTrace();
+			return ""; // TODO - better notification
+		}
+	}
+  
+  public static ILaunchConfigurationWorkingCopy setJvmArgs(
+			ILaunchConfigurationWorkingCopy configuration, String args) {
+		configuration.setAttribute(
+				IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, args);
+
+		return configuration;
+	}
   
   public static int getType(ILaunchConfiguration configuration) {
     int result = getIntAttribute(configuration, TestNGLaunchConfigurationConstants.TYPE);
@@ -302,34 +323,34 @@ public class ConfigurationHelper {
            );      
   }
 
-  /**
-   * Suite generator based on TestNG core. It is overseeded by internal suite
-   * generators that offer more control on the names.
-   * @param projectName the project name
-   * @param packages a list (possible empty) of package names
-   * @param classMethods a map (possible empty) of classes and their corresponding methods
-   * @param groups a list (possible empty) of group names
-   * @param parameters the parameters required to run the test
-   * @param annotationType
-   * @param logLevel
-   * @return
-   */
-  private static List createLaunchSuites(String projectName, 
-                                         List packages, 
-                                         Map classMethods, 
-                                         List groups, 
-                                         Map parameters, 
-                                         String annotationType, 
-                                         int logLevel) {
-    return Arrays.asList(
-        new Object[] {org.testng.xml.SuiteGenerator.createSuite(projectName,
-                                                                packages,
-                                                                classMethods, 
-                                                                groups, 
-                                                                parameters,
-                                                                annotationType,
-                                                                logLevel)});
-  }
+//  /**
+//   * Suite generator based on TestNG core. It is overseeded by internal suite
+//   * generators that offer more control on the names.
+//   * @param projectName the project name
+//   * @param packages a list (possible empty) of package names
+//   * @param classMethods a map (possible empty) of classes and their corresponding methods
+//   * @param groups a list (possible empty) of group names
+//   * @param parameters the parameters required to run the test
+//   * @param annotationType
+//   * @param logLevel
+//   * @return
+//   */
+//  private static List createLaunchSuites(String projectName, 
+//                                         List packages, 
+//                                         Map classMethods, 
+//                                         List groups, 
+//                                         Map parameters, 
+//                                         String annotationType, 
+//                                         int logLevel) {
+//    return Arrays.asList(
+//        new Object[] {org.testng.xml.SuiteGenerator.createSuite(projectName,
+//                                                                packages,
+//                                                                classMethods, 
+//                                                                groups, 
+//                                                                parameters,
+//                                                                annotationType,
+//                                                                logLevel)});
+//  }
 
   /**
    * @param configuration
@@ -410,13 +431,10 @@ public class ConfigurationHelper {
    * @return
    */
   public static ILaunchConfiguration findConfiguration(ILaunchManager launchManager, 
-		  IProject project, String confName, ILaunchConfiguration defaultConfiguration) {
-
+		  IProject project, String confName, RunInfo runInfo) {
+ 
 	    ILaunchConfiguration resultConf = null;
 		try {
-			if (defaultConfiguration != null) {
-				resultConf = defaultConfiguration.copy(confName);								
-			} else {
 				ILaunchConfigurationType confType = launchManager
 						.getLaunchConfigurationType(TestNGLaunchConfigurationConstants.ID_TESTNG_APPLICATION);
 				;
@@ -429,38 +447,44 @@ public class ConfigurationHelper {
 
 				for (int i = 0; i < availConfs.length; i++) {
 					String confProjectName = ConfigurationHelper
-							.getProjectName(availConfs[i]);
+					.getProjectName(availConfs[i]);
 					String confMainName = ConfigurationHelper
-							.getMain(availConfs[i]);
+					.getMain(availConfs[i]);
 
 					if (projectName.equals(confProjectName)
-							&& mainRunner.equals(confMainName)
-							&& confName.equals(availConfs[i].getName())) {
-						resultConf = availConfs[i];
-						break;
-					}
-				}
-			}
+							&& mainRunner.equals(confMainName) ) {
+						if (confName != null && 
+								confName.equals(availConfs[i].getName())) {
+							resultConf = availConfs[i];
+							break;
+						}
+						else if (runInfo != null) {
+							Map availableClassMethods = getClassMethods(availConfs[i]);
+							String method = runInfo.getMethodName();
+							if (method != null && availableClassMethods != null) {
+								String className = runInfo.getClassName();
+								Object o = availableClassMethods.get(className);
+								if (o != null && o instanceof List) {
+									List methods = (List) o;
+									if (methods.size() == 1) {
+										String available = (String) methods.get(0);
+										if (method.equalsIgnoreCase(available)) {
+											resultConf = availConfs[i];
+											break;
+										}
+									}
+								}
+							}
+						}// else if
+						// TODO: else complain about no reference parameters
+					}// if
+				}	// for			   
 		} catch (CoreException ce) {
 			; // IGNORE
 		}
 		
 		return resultConf;
 	}
-
-
-  /**
-	 * Looks for an available configuration that matches the project and
-	 * confName parameters.
-	 * 
-	 * @param launchManager
-	 * @param project
-	 * @param confName
-	 * @return
-	 */
-  public static ILaunchConfiguration findConfiguration(ILaunchManager launchManager, IProject project, String confName) {
-      return findConfiguration(launchManager, project, confName, null);
-  }
 
   /**
    * @param classMethods

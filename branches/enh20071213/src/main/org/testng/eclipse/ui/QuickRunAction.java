@@ -1,8 +1,5 @@
 package org.testng.eclipse.ui;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
@@ -69,85 +66,17 @@ public class QuickRunAction extends Action {
 
     if(null == imethod) return;
     /*
-     * The previous launch configuration is passed along in the 
-     * sixth parameter to launchMethodConfiguration. Here is why:
+     * The runInfo is passed along in the in order to preserve any 
+     * jvm args used in the original launcher when
      * QuickRunAction is activated from the FailureTab to re-run failed 
-     * methods. Since a per-method launcher has a different name than any 
-     * other launcher, and often the orginal launcher will have some larger
-     * scope, no match may be found. If a new launcher is created 
-     * from scratch, any jvm args will be lost. This way, such a new 
-     * launcher is created from the previous launcher - the one used to run 
-     * the failed tests - so any jvm args are preserved.
+     * methods. 
      */
     ILaunchConfiguration config = m_previousRun.getLaunchConfiguration();
-    config = LaunchUtil.setJvmArg(TestNGPlugin.getFailedTestsKey(), m_runInfo.getTestDescription(), config);
+    m_runInfo.setJvmArgs(ConfigurationHelper.getJvmArgs(config));
     LaunchUtil.launchMethodConfiguration(m_javaProject, 
         imethod, 
         ConfigurationHelper.getComplianceLevel(m_javaProject, config), 
-        m_runMode, config);
+        m_runMode, m_runInfo);    
   }
   
-/*  public void run() {
-    IMethod imethod= null; 
-    Map parameters= null; 
-    try {
-      imethod= (IMethod) JDTUtil.findElement(m_javaProject, m_runInfo); 
-      parameters= ParameterSolver.solveParameters(imethod);
-    }
-    catch(JavaModelException jmex) {
-      TestNGPlugin.log(new Status(IStatus.ERROR, TestNGPlugin.PLUGIN_ID, 3333, 
-          "Cannot find method " + m_runInfo.getMethodDisplay() + " in class " + m_runInfo.getClassName(), //$NON-NLS-1$ $NON-NLS-2$
-          jmex));
-    }
-
-    if(null == imethod) return;
-
-    solveDependencies(imethod);
-
-    final String confName= imethod.getDeclaringType().getElementName() + "." + imethod.getElementName();
-    ILaunchConfigurationWorkingCopy workingCopy= 
-      ConfigurationHelper.createBasicConfiguration(getLaunchManager(), m_javaProject.getProject(), confName);
-    workingCopy.setAttribute(TestNGLaunchConfigurationConstants.CLASS_TEST_LIST, m_className);
-    workingCopy.setAttribute(TestNGLaunchConfigurationConstants.METHOD_TEST_LIST, m_methodName);
-    workingCopy.setAttribute(TestNGLaunchConfigurationConstants.TYPE, TestNGLaunchConfigurationConstants.METHOD);
-    if(null != parameters) {
-      workingCopy.setAttribute(TestNGLaunchConfigurationConstants.PARAMS, parameters);
-    }
-
-    String complianceLevel= ConfigurationHelper.getComplianceLevel(m_javaProject, m_previousRun.getLaunchConfiguration());
-    workingCopy.setAttribute(TestNGLaunchConfigurationConstants.TESTNG_COMPLIANCE_LEVEL_ATTR,
-                             complianceLevel);
-
-    if(null != workingCopy) {
-      try {
-        launchConfiguration(workingCopy.doSave(), m_runMode);
-      }
-      catch(CoreException ce) {
-        TestNGPlugin.log(ce);
-      }
-    }
-  }*/
-  
-/*  private void solveDependencies(IMethod imethod) {
-    Map methods = new HashMap();
-    methods.put(imethod.getElementName(), imethod);
-    
-    JDTUtil.solveDependencies(imethod, methods);
-    
-    m_methodName= new ArrayList(methods.size());
-    for(Iterator it= methods.values().iterator(); it.hasNext(); ) {
-      IMethod m= (IMethod) it.next();
-      m_methodName.add(m.getElementName());
-    }    
-  }*/
-  
-/*  protected ILaunchManager getLaunchManager() {
-    return DebugPlugin.getDefault().getLaunchManager();
-  }*/
-  
-/*  protected void launchConfiguration(ILaunchConfiguration config, String mode) {
-    if(null != config) {
-      DebugUITools.launch(config, mode);
-    }
-  }*/
 }
