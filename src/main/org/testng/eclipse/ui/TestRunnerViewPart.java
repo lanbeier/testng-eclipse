@@ -1260,25 +1260,10 @@ implements IPropertyChangeListener, IRemoteSuiteListener, IRemoteTestListener {
     
     public void run() {
       if(null != m_LastLaunch && hasErrors()) {
-    	// If any test descriptions of failed tests have been saved, pass 
-    	// them along as a jvm argument. They can they be used by 
-    	// @Factory methods to select which parameters to use for creating
-    	// the set of test instances to re-run.  
-    	ILaunchConfiguration config = m_LastLaunch.getLaunchConfiguration();
-    	Set descriptions = getTestDescriptions();
-    	if (!descriptions.isEmpty()) { // String.join is not available in jdk 1.4
-    		StringBuffer buf = new StringBuffer();     		
-    		Iterator it = descriptions.iterator();
-    		boolean first = true;
-    		while (it.hasNext()) {
-    			if (first) first = false;
-    			else buf.append(",");
-    			buf.append (it.next());
-    		}			
-			config = LaunchUtil.setJvmArg(TestNGPlugin.getFailedTestsKey(), buf.toString(), m_LastLaunch.getLaunchConfiguration());				
-    	}
         LaunchUtil.launchFailedSuiteConfiguration(m_workingProject, 
-        		m_LastLaunch.getLaunchMode(), config);
+        		m_LastLaunch.getLaunchMode(), 
+        		m_LastLaunch.getLaunchConfiguration(),
+        		getTestDescriptions());
       }
     }    
   }

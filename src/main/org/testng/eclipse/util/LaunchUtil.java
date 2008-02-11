@@ -1,11 +1,10 @@
 package org.testng.eclipse.util;
 
-
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,10 +39,13 @@ import org.testng.TestNG;
 import org.testng.eclipse.TestNGPlugin;
 import org.testng.eclipse.TestNGPluginConstants;
 import org.testng.eclipse.launch.TestNGLaunchConfigurationConstants;
+import org.testng.eclipse.ui.RunInfo;
 import org.testng.eclipse.ui.util.ConfigurationHelper;
 import org.testng.eclipse.util.JDTUtil.MethodDefinition;
 import org.testng.eclipse.util.param.ParameterSolver;
 import org.testng.reporters.FailedReporter;
+
+//import sun.security.krb5.Config;
 
 /**
  * An utility class that centralize the work about configuration launchers.
@@ -74,7 +76,7 @@ public class LaunchUtil {
    */
   public static void launchFailedSuiteConfiguration(IJavaProject javaProject, 
 		  String runMode) {
-	  launchFailedSuiteConfiguration(javaProject, runMode, null);
+	  launchFailedSuiteConfiguration(javaProject, runMode, null, null);
   }
   
 
@@ -82,45 +84,59 @@ public class LaunchUtil {
    * Suite file launcher. The file may reside outside the workbench.
    */
   public static void launchFailedSuiteConfiguration(IJavaProject javaProject, 
-		  String runMode, ILaunchConfiguration defaultConfig) {
-    // field never read TestNGPlugin plugin= TestNGPlugin.getDefault();
+		  String runMode, ILaunchConfiguration prevConfig, Set failureDescriptions) {
     final String suiteConfName= javaProject.getElementName() + "-" + FailedReporter.TESTNG_FAILED_XML;
     final String suiteFilePath= TestNGPlugin.getPluginPreferenceStore().getOutputAbsolutePath(javaProject).toOSString() + "/" + FailedReporter.TESTNG_FAILED_XML;
     
     launchSuiteConfiguration(javaProject.getProject(),
         suiteConfName,
         suiteFilePath,
-        runMode, defaultConfig);
+        runMode, prevConfig, failureDescriptions);
   }
   
   /**
    * Suite file launcher. The <code>IFile</code> must exist in the workbench.
    */
   public static void launchSuiteConfiguration(IFile suiteFile, String mode) {
-	  launchSuiteConfiguration(suiteFile, mode, null);
+	  launchSuiteConfiguration(suiteFile, mode, null, null);
   }
   
   /**
    * Suite file launcher. The <code>IFile</code> must exist in the workbench.
    */
-  public static void launchSuiteConfiguration(IFile suiteFile, String mode, ILaunchConfiguration defaultConfig) {
+  public static void launchSuiteConfiguration(IFile suiteFile, String mode, 
+		  ILaunchConfiguration prevConfig, Set failureDescriptions) {
     final IProject project= suiteFile.getProject();
     final String fileConfName= suiteFile.getProjectRelativePath().toString().replace('/', '.');
     final String suitePath= suiteFile.getLocation().toOSString();
 
-    launchSuiteConfiguration(project, fileConfName, suitePath, mode, defaultConfig);
+    launchSuiteConfiguration(project, fileConfName, suitePath, mode, prevConfig, failureDescriptions);
   }
   
     
   private static void launchSuiteConfiguration(IProject project, String fileConfName, String suiteFilePath, 
-		  String mode, ILaunchConfiguration defaultConfig) {
-    ILaunchConfigurationWorkingCopy configWC= createLaunchConfiguration(project, fileConfName, defaultConfig);
+		  String mode, ILaunchConfiguration prevConfig, Set failureDescriptions) {
+    ILaunchConfigurationWorkingCopy configWC= createLaunchConfiguration(project, fileConfName, null);
 
     configWC.setAttribute(TestNGLaunchConfigurationConstants.SUITE_TEST_LIST,
                           Collections.singletonList(suiteFilePath));
     configWC.setAttribute(TestNGLaunchConfigurationConstants.TYPE,
                           TestNGLaunchConfigurationConstants.SUITE);
-    
+    // carry over jvm args from prevConfig
+    // set failed test jvm args
+    String jargs = ConfigurationHelper.getJvmArgs(prevConfig);
+    if (jargs != null) ConfigurationHelper.setJvmArgs(configWC, jargs);
+    if (failureDescriptions != null && failureDescriptions.size() > 0) {
+    	Iterator it = failureDescriptions.iterator();
+    	StringBuilder buf = new StringBuilder();
+		boolean first = true;
+		while (it.hasNext()) {
+			if (first) first = false;
+			else buf.append(",");
+			buf.append (it.next());
+		}
+		setFailedTestsJvmArg(buf.toString(), configWC);
+    }
     runConfig(configWC, mode);
   }
   
@@ -129,7 +145,7 @@ public class LaunchUtil {
                                             Map launchAttributes,
                                             ICompilationUnit compilationUnit,
                                             String launchMode) {
-    ILaunchConfigurationWorkingCopy workingCopy= createLaunchConfiguration(project, configName);
+    ILaunchConfigurationWorkingCopy workingCopy= createLaunchConfiguration(project, configName, null);
 
     try {
       launchAttributes.putAll(workingCopy.getAttributes());
@@ -184,7 +200,7 @@ public class LaunchUtil {
       ; // this should never happen but who knows
     }
     
-    ILaunchConfigurationWorkingCopy workingCopy= createLaunchConfiguration(ijp.getProject(), "package " + ipf.getElementName());
+    ILaunchConfigurationWorkingCopy workingCopy= createLaunchConfiguration(ijp.getProject(), "package " + ipf.getElementName(), null);
 
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.CLASS_TEST_LIST,
                              EMPTY_ARRAY_PARAM);
@@ -210,12 +226,11 @@ public class LaunchUtil {
   }
   
   public static void launchMethodConfiguration(IJavaProject javaProject,
-                                               IMethod imethod,
-                                               String complianceLevel,
-                                               String runMode,
-                                               ILaunchConfiguration defaultConfig) {
-    final String confName= imethod.getDeclaringType().getElementName() + "." + imethod.getElementName();
-    
+          IMethod imethod,
+          String complianceLevel,
+          String runMode,
+          RunInfo runInfo) {
+	     
     Set/*<String>*/ groups= new HashSet();
     List allmethods= solveDependsOn(imethod);
     IMethod[] methods= new IMethod[allmethods.size()];
@@ -226,10 +241,10 @@ public class LaunchUtil {
     }
     
     if(!groups.isEmpty()) {
-      groupDependencyWarning(confName, groups);
+      groupDependencyWarning(imethod.getElementName(), groups);
     }
 
-    launchMethodBasedConfiguration(javaProject, confName, methods, complianceLevel, runMode, defaultConfig);
+    launchMethodBasedConfiguration(javaProject, methods, complianceLevel, runMode, runInfo);
   }
  
   /**
@@ -246,12 +261,9 @@ public class LaunchUtil {
 
   }
   
-  private static void launchMethodBasedConfiguration(IJavaProject ijp, String confName, IMethod[] methods, String annotationType, String runMode) {
-	  launchMethodBasedConfiguration(ijp, confName, methods, annotationType, runMode, null);
-  }
   
-  private static void launchMethodBasedConfiguration(IJavaProject ijp, String confName, 
-		  IMethod[] methods, String annotationType, String runMode, ILaunchConfiguration defaultConfig) {
+  private static void launchMethodBasedConfiguration(IJavaProject ijp,  
+		  IMethod[] methods, String annotationType, String runMode, RunInfo runInfo) {
     Set typesSet= new HashSet();
     for(int i= 0; i < methods.length; i++) {
       typesSet.add(methods[i].getDeclaringType());
@@ -279,7 +291,7 @@ public class LaunchUtil {
     
     final String complianceLevel= annotationType != null ? annotationType : getQuickComplianceLevel(types);
   
-    ILaunchConfigurationWorkingCopy workingCopy= createLaunchConfiguration(ijp.getProject(), confName, defaultConfig);
+    ILaunchConfigurationWorkingCopy workingCopy= createLaunchConfiguration(ijp.getProject(), null, runInfo);
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.CLASS_TEST_LIST,
                              typeNames);
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.METHOD_TEST_LIST,
@@ -294,7 +306,15 @@ public class LaunchUtil {
                              solveParameters(methods));
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.TESTNG_COMPLIANCE_LEVEL_ATTR,
                              complianceLevel);
-
+    if (runInfo != null) {
+    	// set the class and method
+    	
+    	// set any jvm args
+    	String jargs = runInfo.getJvmArgs();
+    	if (jargs != null) workingCopy.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS,
+    			jargs);
+    	setFailedTestsJvmArg(runInfo.getTestDescription(), workingCopy);
+    }
     runConfig(workingCopy, runMode);
   }
   
@@ -338,7 +358,7 @@ public class LaunchUtil {
       groupDependencyWarning(confName, null);
     }
     
-    ILaunchConfigurationWorkingCopy workingCopy = createLaunchConfiguration(ijp.getProject(), confName); 
+    ILaunchConfigurationWorkingCopy workingCopy = createLaunchConfiguration(ijp.getProject(), confName, null); 
     
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.TYPE,
                              TestNGLaunchConfigurationConstants.CLASS);
@@ -397,9 +417,9 @@ public class LaunchUtil {
    * @throws CoreException if getting an working copy from an existing configuration fails
    */
   private static ILaunchConfigurationWorkingCopy createLaunchConfiguration(IProject project, String confName, 
-		  ILaunchConfiguration defaultConfig ) {
+		  RunInfo runInfo ) {
     ILaunchManager launchManager= getLaunchManager();
-    ILaunchConfiguration config= ConfigurationHelper.findConfiguration(launchManager, project, confName, defaultConfig);
+    ILaunchConfiguration config= ConfigurationHelper.findConfiguration(launchManager, project, confName, runInfo);
 
     ILaunchConfigurationWorkingCopy configWC= null;
     if(null != config) {
@@ -411,23 +431,16 @@ public class LaunchUtil {
             "Cannot create working copy of existing launcher " + config.getName(), cex));
       }
     }
-    if(null == configWC) {
+    if(null == configWC) { 
+      if (confName == null && runInfo != null) {
+    	  confName = runInfo.getClassName() + "." + runInfo.getMethodName();    	  
+      }
       configWC= ConfigurationHelper.createBasicConfiguration(launchManager, project, confName);
     }
 
     return configWC;
   }
 
-  /**
-   * Initialize a <code>ILaunchConfigurationWorkingCopy</code> either by using an existing one (if found)
-   * or by creating a new one based on the <code>project</code> name and the <code>confName</code>.
-   * 
-   * @throws CoreException if getting an working copy from an existing configuration fails
-   */
-  private static ILaunchConfigurationWorkingCopy createLaunchConfiguration(IProject project, String confName) {
-    return createLaunchConfiguration(project, confName, null);
-  }
-  
   private static void runConfig(ILaunchConfigurationWorkingCopy launchConfiguration, String runMode) {
     ILaunchConfiguration conf= save(launchConfiguration);
     
@@ -511,47 +524,40 @@ public class LaunchUtil {
     return elements != null && elements.length > 0 ? TestNG.JDK_ANNOTATION_TYPE : TestNG.JAVADOC_ANNOTATION_TYPE;
   }
   
-  /**
-   * Create a working copy from the launcher arg, and set a jvm arg with the supplied 
-   * key and value. 
-   * @param key
-   * @param value
-   * @param config
-   * @return
-   */
-  public static ILaunchConfigurationWorkingCopy setJvmArg (String key, String value, ILaunchConfiguration config) {	  
-	  ILaunchConfigurationWorkingCopy retval = null;
+  
+  public static ILaunchConfigurationWorkingCopy setFailedTestsJvmArg (String value, 
+		  ILaunchConfigurationWorkingCopy config) {
 	  try {
-		    retval = config.getWorkingCopy();
-			String jvmargs = config.getAttribute(
-					IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, "");			
-			String newarg = key + "=\"" + value + "\" ";
-			if (!key.startsWith("-D")) newarg = "-D" + newarg;
-			// if there is no value, then remove this jvm arg if there is one.
-			if (value == "") newarg = " "; 
-			else newarg = " " + newarg;
-			if (jvmargs.equals("")) {
-				// simplest case: set the attribute			
-				retval.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, newarg);
-			}
-			else if (jvmargs.indexOf(key) == -1) {
-				// nothing to replace; just add
-				retval.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, jvmargs + newarg);
-			}
-			else {
-				// find the new arg in the existing jvm args and replace it
-				int start = jvmargs.indexOf(key);
-				int next = jvmargs.indexOf("-D", start + 1);
-				StringBuffer buf = new StringBuffer();
-				buf.append(newarg)
-				.append (jvmargs.substring(0,start));
-				if (next > start) {
-					buf.append(jvmargs.substring(next));
-				}
-				retval.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, buf.toString());
-			}
-		}
+		  String key = TestNGPlugin.getFailedTestsKey();
+		  String jvmargs = config.getAttribute(
+				  IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, "");			
+		  String newarg = key + "=\"" + value + "\" ";
+		  if (!key.startsWith("-D")) newarg = "-D" + newarg;
+		  // if there is no value, then remove this jvm arg if there is one.
+		  if (value == "") newarg = " "; 
+		  else newarg = " " + newarg;
+		  if (jvmargs.equals("")) {
+			  // simplest case: set the attribute
+			  config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, newarg);
+		  }
+		  else if (jvmargs.indexOf(key) == -1) {
+			  // nothing to replace; just add
+			  config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, jvmargs + newarg);
+		  }
+		  else {
+			  // find the new arg in the existing jvm args and replace it
+			  int start = jvmargs.indexOf(key);
+			  int next = jvmargs.indexOf("-D", start + 1);
+			  StringBuffer buf = new StringBuffer();
+			  buf.append(newarg)
+			  .append (jvmargs.substring(0,start));
+			  if (next > start) {
+				  buf.append(jvmargs.substring(next));
+			  }
+			  config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, buf.toString());
+		  }
+	  }
 	  catch (CoreException ce) {}
-	  return retval;
+	  return config;
   }
 }
