@@ -1,0 +1,20 @@
+changes submitted by Joan Friedman (StreamBase Systems Inc)
+
+launcher:
+   Added ability to choose by package
+   Added ability to choose by method; 
+     if a class is already chosen, only methods in that class are offered
+     
+test run tabs:
+   If a 'test description' is available through 'getTestName()', it is 
+     displayed. This is useful when a Factory is running many instances with 
+     the same test method.
+    
+     
+re-running failed test:
+   jvm args from the original launcher are now preserved
+   If a 'test description' is available through 'getTestName()', it is
+      made available with a jvm arg. This is useful if a Factory wishes to 
+      re-run only the failed instances.
+   
+     
