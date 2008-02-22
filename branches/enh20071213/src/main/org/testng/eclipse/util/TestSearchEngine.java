@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.IPackageDeclaration;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IParent;
 import org.eclipse.jdt.core.ISourceReference;
@@ -478,7 +479,8 @@ public class TestSearchEngine {
 
 	          for(int i = 0; i < types.length; i++) {
 	            if(Filters.SINGLE_TEST.accept(types[i])) {
-	              
+	            	IPackageDeclaration[] pkg = ((ICompilationUnit)ije).getPackageDeclarations();
+	            	result.add(pkg[0].getElementName()); // classes usually belong to exactly one package
 	            }
 	          }
 	        }
