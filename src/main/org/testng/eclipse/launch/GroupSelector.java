@@ -33,7 +33,7 @@ public class GroupSelector extends TestngTestSelector  {
 		super();
 		init(callback, createButtonHandler(),
 				TestNGLaunchConfigurationConstants.GROUP, comp, "TestNGMainTab.label.group");
-		setTextEditable(false);
+		//setTextEditable(false); // allow hand entry of group names
 	}
 	
 	public void initializeFrom(ILaunchConfiguration configuration) {

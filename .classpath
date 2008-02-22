@@ -3,7 +3,8 @@
 	<classpathentry kind="src" path="src/main"/>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/TestNG-readonly"/>
-	<classpathentry kind="lib" path="lib/testng-jdk15.jar"/>
 	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.6.0"/>
+	<classpathentry kind="lib" path="lib/testng-5.7.1beta-jdk14.jar"/>
+	<classpathentry kind="lib" path="lib/testng-5.7.1beta-jdk15.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

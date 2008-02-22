@@ -1,5 +1,11 @@
 changes submitted by Joan Friedman (StreamBase Systems Inc)
 
+
+2/22/2008
+Patched TestSearchEngine so search for packages works again.
+
+
+summary before running additions:
 launcher:
    Added ability to choose by package
    Added ability to choose by method; 
