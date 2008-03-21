@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: TestNG plugin
 Bundle-SymbolicName: org.testng.eclipse; singleton:=true
-Bundle-Version: 5.7.1.qualifier
+Bundle-Version: 5.7.2.qualifier
 Bundle-ClassPath: eclipse-testng.jar,
  lib/testng-5.7.1beta-jdk14.jar,
  lib/testng-5.7.1beta-jdk15.jar
@@ -78,5 +78,6 @@ Require-Bundle: org.eclipse.core.expressions,
  org.eclipse.ui.ide,
  org.eclipse.ui.workbench.texteditor,
  org.eclipse.search,
- org.eclipse.jdt.launching
+ org.eclipse.jdt.launching,
+ org.eclipse.ui.editors
 Eclipse-LazyStart: true
