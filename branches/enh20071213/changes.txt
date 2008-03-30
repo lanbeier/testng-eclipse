@@ -20,10 +20,11 @@ test run tabs:
      the same test method.
     
      
-re-running failed test:
-   jvm args from the original launcher are now preserved
+re-running failed tests:
+   jvm args from the original launcher are now preserved. They had been lost.
    If a 'test description' is available through 'getTestName()', it is
-      made available with a jvm arg. This is useful if a Factory wishes to 
-      re-run only the failed instances.
+      now made available with a jvm arg. This is useful if a Factory wishes to 
+      re-run only the failed instances. The name of the argument is 
+      TestNGPluginConstants.S_FAILED_TESTS.
    
      
