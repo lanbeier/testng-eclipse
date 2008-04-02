@@ -2,35 +2,16 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: TestNG plugin
 Bundle-SymbolicName: org.testng.eclipse; singleton:=true
-Bundle-Version: 5.7.2.qualifier
+Bundle-Version: 5.8.0.aaa1
 Bundle-ClassPath: eclipse-testng.jar,
- lib/testng-5.7.1beta-jdk14.jar,
- lib/testng-5.7.1beta-jdk15.jar
+ lib/testng-5.8-jdk14.jar,
+ lib/testng-5.8-jdk15.jar,
+ lib/testng-jdk14.jar,
+ lib/testng-jdk15.jar
 Bundle-Activator: org.testng.eclipse.TestNGPlugin
 Bundle-Vendor: StreamBase Systems Inc
 Bundle-Localization: plugin
-Export-Package: bsh,
- bsh.classpath,
- bsh.collection,
- bsh.commands,
- bsh.org.objectweb.asm,
- bsh.reflect,
- bsh.servlet,
- bsh.util,
- bsh.util.lib,
- com.beust.testng,
- com.thoughtworks.qdox,
- com.thoughtworks.qdox.directorywalker,
- com.thoughtworks.qdox.model,
- com.thoughtworks.qdox.model.util,
- com.thoughtworks.qdox.parser,
- com.thoughtworks.qdox.parser.impl,
- com.thoughtworks.qdox.parser.structs,
- edu.emory.mathcs.backport.java.util,
- edu.emory.mathcs.backport.java.util.concurrent,
- edu.emory.mathcs.backport.java.util.concurrent.atomic,
- edu.emory.mathcs.backport.java.util.concurrent.helpers,
- edu.emory.mathcs.backport.java.util.concurrent.locks,
+Export-Package: com.beust.testng,
  org.testng,
  org.testng.annotations,
  org.testng.eclipse,
