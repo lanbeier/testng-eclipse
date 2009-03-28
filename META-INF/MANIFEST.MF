@@ -2,10 +2,10 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: TestNG
 Bundle-SymbolicName: org.testng.eclipse; singleton:=true
-Bundle-Version: 5.8.0.6
+Bundle-Version: 5.9.0.0
 Bundle-ClassPath: eclipse-testng.jar,lib/testng-jdk14.jar
 Bundle-Activator: org.testng.eclipse.TestNGPlugin
-Bundle-Vendor: Alex Popescu
+Bundle-Vendor: Cedric Beust
 Bundle-Localization: plugin
 Export-Package: bsh,
  bsh.classpath,

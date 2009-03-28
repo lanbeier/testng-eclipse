@@ -126,7 +126,7 @@ public class LaunchUtil {
     if (jargs != null) ConfigurationHelper.setJvmArgs(configWC, jargs);
     if (failureDescriptions != null && failureDescriptions.size() > 0) {
     	Iterator it = failureDescriptions.iterator();
-    	StringBuilder buf = new StringBuilder();
+    	StringBuffer buf = new StringBuffer();
 		boolean first = true;
 		while (it.hasNext()) {
 			if (first) first = false;
