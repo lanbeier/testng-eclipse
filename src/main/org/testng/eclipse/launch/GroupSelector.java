@@ -24,7 +24,7 @@ import org.testng.eclipse.ui.util.ConfigurationHelper;
 import org.testng.eclipse.ui.util.TypeParser;
 import org.testng.eclipse.ui.util.Utils;
 import org.testng.eclipse.util.JDTUtil;
-import org.testng.eclipse.util.TestSuiteSearchEngine;
+import org.testng.eclipse.util.TestSearchEngine;
 
 public class GroupSelector extends TestngTestSelector {
 
@@ -86,7 +86,7 @@ public class GroupSelector extends TestngTestSelector {
       Object[] projects = new Object[1 + dependencies.length];
       projects[0] = getCallback().getSelectedProject();
       System.arraycopy(dependencies, 0, projects, 1, dependencies.length);
-      Object[] types = TestSuiteSearchEngine.findTests(getCallback().getLaunchConfigurationDialog(),
+      Object[] types = TestSearchEngine.findTests(getCallback().getLaunchConfigurationDialog(),
           projects, Filters.SINGLE_TEST);
 
       for(int i = 0; i < types.length; i++) {

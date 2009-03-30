@@ -1,6 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?eclipse version="3.2"?>
-<plugin>
+<?eclipse version="3.0"?>
+<plugin
+   id="org.testng.eclipse"
+   name="TestNG"
+   version="5.8.0.5b"
+   provider-name="Alex Popescu"
+   class="org.testng.eclipse.TestNGPlugin">
+   <runtime>
+      <library name="eclipse-testng.jar">
+         <export name="*"/>
+      </library>
+      <library name="lib/testng-jdk14.jar">
+         <export name="*"/>
+      </library>
+   </runtime>
+   <requires>
+      <import plugin="org.eclipse.core.expressions"/>
+      <import plugin="org.eclipse.core.resources"/>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="org.eclipse.compare"/>
+      <import plugin="org.eclipse.debug.core"/>
+      <import plugin="org.eclipse.debug.ui"/>
+      <import plugin="org.eclipse.jface"/>
+      <import plugin="org.eclipse.jface.text"/>
+      <import plugin="org.eclipse.jdt.core"/>
+      <import plugin="org.eclipse.jdt.debug.ui"/>
+      <import plugin="org.eclipse.jdt.junit"/>
+      <import plugin="org.eclipse.jdt.ui"/>
+      <import plugin="org.eclipse.ui"/>
+      <import plugin="org.eclipse.ui.ide"/>
+      <import plugin="org.eclipse.ui.workbench.texteditor"/>
+      <import plugin="org.eclipse.search"/>
+      <import plugin="org.eclipse.jdt.launching"/>
+   </requires>
+   
+ 
    <extension-point id="internal_testRunTabs" name="%testRunTabs.name" schema="schema/internal-testRunTabs.exsd"/>
 
    <extension point="org.eclipse.ui.popupMenus">
@@ -16,17 +50,7 @@
       </menu>
     </viewerContribution>
   </extension>
-   <extension
-         point="org.eclipse.core.expressions.propertyTesters">
-      <propertyTester
-            properties="isTest,canLaunchAsTestNG"
-            namespace="org.testng.eclipse"
-            type="org.eclipse.core.runtime.IAdaptable"
-            class="org.testng.eclipse.internal.TestNGPropertyTester"
-            id="org.testng.eclipse.TestNGPropertyTester">
-      </propertyTester>
-   </extension>
-   
+
 	<extension point="org.eclipse.jdt.core.classpathVariableInitializer">
       <classpathVariableInitializer
             variable="TESTNG_HOME"
@@ -50,6 +74,15 @@
             name="%Launch.label"
             sourceLocatorId="org.eclipse.jdt.launching.sourceLocator.JavaSourceLookupDirector"
             sourcePathComputerId="org.eclipse.jdt.launching.sourceLookup.javaSourcePathComputer">
+         <fileExtension
+               extension="java"
+               default="false"/>
+         <fileExtension
+               extension="class"
+               default="false"/>
+         <fileExtension
+               extension="xml"
+               default="false"/>
       </launchConfigurationType>
    </extension>
    <extension
@@ -84,13 +117,17 @@
          <contextualLaunch>
             <enablement>
                <with variable="selection">
-                  <count value="1"/>
-               	  <iterate>
-                     <adapt type="org.eclipse.jdt.core.IJavaElement">
-		                <test property="org.eclipse.jdt.core.isInJavaProject"/>
-		                <test property="org.testng.eclipse.canLaunchAsTestNG" forcePluginActivation="true"/>
-		             </adapt>
-		          </iterate>
+                  <count
+                        value="1">
+                  </count>
+			   		<iterate>
+				 		<or>
+				   			<test property="org.eclipse.debug.ui.matchesPattern" value="*.java"/>
+				   			<test property="org.eclipse.debug.ui.matchesPattern" value="*.class"/>
+				   			<instanceof value="org.eclipse.jdt.core.IJavaElement"/>
+				 		</or>
+				 		<test property="org.testng.eclipse.isTest"/>
+			   		</iterate>
                </with>
             </enablement>
          </contextualLaunch>
@@ -268,6 +305,4 @@
          point="org.eclipse.core.runtime.preferences">
       <initializer class="org.testng.eclipse.ui.preferences.PreferenceInitializer"/>
    </extension>
-
-
 </plugin>

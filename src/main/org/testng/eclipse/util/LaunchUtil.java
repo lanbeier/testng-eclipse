@@ -126,7 +126,7 @@ public class LaunchUtil {
     if (jargs != null) ConfigurationHelper.setJvmArgs(configWC, jargs);
     if (failureDescriptions != null && failureDescriptions.size() > 0) {
     	Iterator it = failureDescriptions.iterator();
-    	StringBuffer buf = new StringBuffer();
+    	StringBuilder buf = new StringBuilder();
 		boolean first = true;
 		while (it.hasNext()) {
 			if (first) first = false;
@@ -177,7 +177,7 @@ public class LaunchUtil {
       classMethods.put(types[i].getFullyQualifiedName(), EMPTY_ARRAY_PARAM);
     }
 
-    attrs.put(TestNGLaunchConfigurationConstants.TYPE, new Integer(TestNGLaunchConfigurationConstants.SINGLE));
+    attrs.put(TestNGLaunchConfigurationConstants.TYPE, new Integer(TestNGLaunchConfigurationConstants.CLASS));
     attrs.put(TestNGLaunchConfigurationConstants.CLASS_TEST_LIST, classNames);
     attrs.put(TestNGLaunchConfigurationConstants.TESTNG_COMPLIANCE_LEVEL_ATTR, annotationType);
     attrs.put(TestNGLaunchConfigurationConstants.ALL_METHODS_LIST, ConfigurationHelper.toClassMethodsMap(classMethods));
@@ -359,7 +359,7 @@ public class LaunchUtil {
     ILaunchConfigurationWorkingCopy workingCopy = createLaunchConfiguration(ijp.getProject(), confName, null); 
     
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.TYPE,
-                             TestNGLaunchConfigurationConstants.SINGLE);
+                             TestNGLaunchConfigurationConstants.CLASS);
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.ALL_METHODS_LIST,
                              ConfigurationHelper.toClassMethodsMap(classMethods));
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.CLASS_TEST_LIST,
