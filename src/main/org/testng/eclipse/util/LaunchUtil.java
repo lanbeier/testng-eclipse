@@ -177,7 +177,7 @@ public class LaunchUtil {
       classMethods.put(types[i].getFullyQualifiedName(), EMPTY_ARRAY_PARAM);
     }
 
-    attrs.put(TestNGLaunchConfigurationConstants.TYPE, new Integer(TestNGLaunchConfigurationConstants.CLASS));
+    attrs.put(TestNGLaunchConfigurationConstants.TYPE, new Integer(TestNGLaunchConfigurationConstants.SINGLE));
     attrs.put(TestNGLaunchConfigurationConstants.CLASS_TEST_LIST, classNames);
     attrs.put(TestNGLaunchConfigurationConstants.TESTNG_COMPLIANCE_LEVEL_ATTR, annotationType);
     attrs.put(TestNGLaunchConfigurationConstants.ALL_METHODS_LIST, ConfigurationHelper.toClassMethodsMap(classMethods));
@@ -359,7 +359,7 @@ public class LaunchUtil {
     ILaunchConfigurationWorkingCopy workingCopy = createLaunchConfiguration(ijp.getProject(), confName, null); 
     
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.TYPE,
-                             TestNGLaunchConfigurationConstants.CLASS);
+                             TestNGLaunchConfigurationConstants.SINGLE);
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.ALL_METHODS_LIST,
                              ConfigurationHelper.toClassMethodsMap(classMethods));
     workingCopy.setAttribute(TestNGLaunchConfigurationConstants.CLASS_TEST_LIST,

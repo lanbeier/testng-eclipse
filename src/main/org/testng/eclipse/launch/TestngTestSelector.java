@@ -124,7 +124,7 @@ public abstract class TestngTestSelector {
 
 		public void widgetSelected(SelectionEvent evt) {
 			if (((Button) evt.widget).getSelection()) {
-				callback.setType(m_type);
+				//callback.setType(m_type);
 			}
 		}
 	}
@@ -145,7 +145,7 @@ public abstract class TestngTestSelector {
 		}
 
 		public void modifyText(ModifyEvent evt) {
-			callback.setType(m_type);
+			//callback.setType(m_type);
 		}
 	}
 
@@ -166,12 +166,12 @@ public abstract class TestngTestSelector {
 		}
 
 		public void widgetSelected(SelectionEvent evt) {
-			callback.setType(m_type);
+			//callback.setType(m_type);
 			try {
-				callback.setEnabledRadios(false);
+				//callback.setEnabledRadios(false);
 				m_handler.handleButton();
 			} finally {
-				callback.setEnabledRadios(true);
+				//callback.setEnabledRadios(true);
 			}
 		};
 
