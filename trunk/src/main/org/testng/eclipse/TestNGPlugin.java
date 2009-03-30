@@ -11,16 +11,21 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchListener;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.Bundle;
@@ -158,6 +163,10 @@ public class TestNGPlugin extends AbstractUIPlugin implements ILaunchListener {
       return;
     }
 
+	ILaunchConfiguration config= launch.getLaunchConfiguration();
+	if (config == null)
+		return;
+    
     int port = -1;
     String projectName = "";
     String subName = "";
@@ -165,7 +174,7 @@ public class TestNGPlugin extends AbstractUIPlugin implements ILaunchListener {
     try {
       // test whether the launch defines the JUnit attributes
       port = ConfigurationHelper.getPort(launch);
-      projectName = ConfigurationHelper.getProjectName(launch);
+      projectName = config.getAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME, (String) null);
       subName = ConfigurationHelper.getSubName(launch);
     }
     catch(Exception ex) {
@@ -321,4 +330,19 @@ public class TestNGPlugin extends AbstractUIPlugin implements ILaunchListener {
   public static String getFailedTestsKey() {
 	  return TestNGPluginConstants.S_FAILED_TESTS;
   }
-}
+
+	public static Shell getActiveWorkbenchShell() {
+		IWorkbenchWindow workBenchWindow= getActiveWorkbenchWindow();
+		if (workBenchWindow == null)
+			return null;
+		return workBenchWindow.getShell();
+	}
+	
+	public static IWorkbenchWindow getActiveWorkbenchWindow() {
+		if (m_pluginInstance == null)
+			return null;
+		IWorkbench workBench= m_pluginInstance.getWorkbench();
+		if (workBench == null)
+			return null;
+		return workBench.getActiveWorkbenchWindow();
+	}}

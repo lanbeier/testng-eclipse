@@ -23,8 +23,8 @@ import org.testng.eclipse.TestNGPluginConstants;
 import org.testng.eclipse.launch.TestNGLaunchConfigurationConstants;
 import org.testng.eclipse.ui.RunInfo;
 import org.testng.eclipse.util.JDTUtil;
-import org.testng.eclipse.util.SuiteGenerator;
 import org.testng.remote.RemoteTestNG;
+import org.testng.xml.LaunchSuite;
 
 /**
  * Helper methods to store and retrieve values from a launch configuration.
@@ -65,16 +65,6 @@ public class ConfigurationHelper {
     }
   }
 
-  public static int getLogLevel(ILaunchConfiguration config) {
-    String stringResult = getStringAttribute(config, TestNGLaunchConfigurationConstants.LOG_LEVEL);
-    if(null == stringResult) {
-      return TestNGLaunchConfigurationConstants.DEFAULT_LOG_LEVEL;
-    }
-    else {
-      return Integer.parseInt(stringResult);
-    }
-  }
-  
   public static String getSourcePath(ILaunchConfiguration config) {
     return getStringAttribute(config, TestNGLaunchConfigurationConstants.DIRECTORY_TEST_LIST);
   }
@@ -115,20 +105,6 @@ public class ConfigurationHelper {
     return getListAttribute(configuration, TestNGLaunchConfigurationConstants.METHOD_TEST_LIST);
   }
 
-  public static String getComplianceLevel(ILaunchConfiguration configuration) {
-    return getStringAttribute(configuration, TestNGLaunchConfigurationConstants.TESTNG_COMPLIANCE_LEVEL_ATTR);
-  }
-  
-  public static String getComplianceLevel(IJavaProject ijproject, ILaunchConfiguration configuration) {
-    String result = getStringAttribute(configuration, TestNGLaunchConfigurationConstants.TESTNG_COMPLIANCE_LEVEL_ATTR);
-    
-    if(null == result) {
-      result = JDTUtil.getProjectVMVersion(ijproject);
-    }
-    
-    return result;
-  }
-  
   public static String getJvmArgs(ILaunchConfiguration configuration) {
 		if (configuration == null)
 			return null;
@@ -226,132 +202,6 @@ public class ConfigurationHelper {
     return result;
   }
 
-  public static ILaunchConfigurationWorkingCopy createBasicConfiguration(final ILaunchManager launchManager,
-                                                                         final IProject project,
-                                                                         final String confName) {
-    ILaunchConfigurationWorkingCopy wConf = null;
-    
-    try {
-      ILaunchConfigurationType configurationType = launchManager.getLaunchConfigurationType(TestNGLaunchConfigurationConstants.ID_TESTNG_APPLICATION);
-      wConf = configurationType.newInstance(null /*project*/, confName); // launchManager.generateUniqueLaunchConfigurationNameFrom(confName));
-      wConf.setAttribute(IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME,
-                         RemoteTestNG.class.getName());
-      wConf.setAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME,
-                         project.getName());
-    }
-    catch(CoreException ce) {
-      TestNGPlugin.log(ce);
-    }
-    
-    return wConf;
-  }
-  
-  /**
-   * @param selectedProject
-   */
-  public static void createBasicConfiguration(IJavaProject javaProject, ILaunchConfigurationWorkingCopy config) {
-    final String projectName = (javaProject == null) ? "" : javaProject.getElementName();
-    
-    config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME,
-                        projectName);
-    config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME,
-                        RemoteTestNG.class.getName());
-    config.setAttribute(TestNGLaunchConfigurationConstants.TESTNG_COMPLIANCE_LEVEL_ATTR,
-                        JDTUtil.getProjectVMVersion(javaProject));
-    config.setAttribute(TestNGLaunchConfigurationConstants.TYPE, TestNGLaunchConfigurationConstants.CLASS);
-    config.setAttribute(TestNGLaunchConfigurationConstants.LOG_LEVEL, "2"); 
-  }
-
-  private static String computeRelativePath(final String rootPath, final String sourcePath) {
-    File rootFile = new File(rootPath);
-    String rootRelativeName = rootFile.getName();
-    
-    int idx = sourcePath.indexOf(rootPath);
-    return File.separator + rootRelativeName + sourcePath.substring(idx + rootPath.length());
-  }
-
-  /**
-   * @return List<LaunchSuite>
-   */
-  public static List getLaunchSuites(IJavaProject ijp, ILaunchConfiguration configuration) {
-    int type = ConfigurationHelper.getType(configuration);
-    
-    List packages= null;
-    List testClasses = null;
-    List groups = null;
-    Map classMethods= null;
-    Map parameters= null;
-    
-    parameters= getMapAttribute(configuration, TestNGLaunchConfigurationConstants.PARAMS);
-    if (type == TestNGLaunchConfigurationConstants.SUITE) {
-      return createLaunchSuites(ijp.getProject(), getSuites(configuration));
-    }
-    
-    if (type == TestNGLaunchConfigurationConstants.GROUP) {
-      groups = getGroups(configuration);
-      testClasses = getGroupClasses(configuration);
-      packages= getListAttribute(configuration, TestNGLaunchConfigurationConstants.PACKAGE_TEST_LIST);
-    }
-    else if (type == TestNGLaunchConfigurationConstants.CLASS) {
-      testClasses = getClasses(configuration);
-      classMethods= getClassMethods(configuration);
-    }
-    else if (type == TestNGLaunchConfigurationConstants.METHOD) {
-      classMethods= getClassMethods(configuration); 
-      testClasses = getClasses(configuration);
-    }
-    else if (type == TestNGLaunchConfigurationConstants.PACKAGE) {
-      packages= getListAttribute(configuration, TestNGLaunchConfigurationConstants.PACKAGE_TEST_LIST);
-    }
-
-//    return createLaunchSuites(ijp.getProject().getName(),
-//                              packages,
-//                              getClassMethods(configuration),
-//                              groups,
-//                              parameters,
-//                              getComplianceLevel(ijp, configuration),
-//                              getLogLevel(configuration));
-    
-    return createLaunchSuites(ijp.getProject().getName(),
-                              packages,
-                              testClasses, 
-                              classMethods, 
-                              groups,
-                              parameters,
-                              getComplianceLevel(ijp, configuration),
-                              getLogLevel(configuration)
-           );      
-  }
-
-//  /**
-//   * Suite generator based on TestNG core. It is overseeded by internal suite
-//   * generators that offer more control on the names.
-//   * @param projectName the project name
-//   * @param packages a list (possible empty) of package names
-//   * @param classMethods a map (possible empty) of classes and their corresponding methods
-//   * @param groups a list (possible empty) of group names
-//   * @param parameters the parameters required to run the test
-//   * @param annotationType
-//   * @param logLevel
-//   * @return
-//   */
-//  private static List createLaunchSuites(String projectName, 
-//                                         List packages, 
-//                                         Map classMethods, 
-//                                         List groups, 
-//                                         Map parameters, 
-//                                         String annotationType, 
-//                                         int logLevel) {
-//    return Arrays.asList(
-//        new Object[] {org.testng.xml.SuiteGenerator.createSuite(projectName,
-//                                                                packages,
-//                                                                classMethods, 
-//                                                                groups, 
-//                                                                parameters,
-//                                                                annotationType,
-//                                                                logLevel)});
-//  }
-
   /**
    * @param configuration
    * @return
@@ -386,37 +236,12 @@ public class ConfigurationHelper {
         suiteFile= project.getFile(suitePath).getLocation().toFile();
       }
       
-      suiteList.add(SuiteGenerator.createProxiedXmlSuite(suiteFile));
+      suiteList.add(new LaunchSuite.ExistingSuite(suiteFile));
     }
     
     return suiteList;
   }
     
-  /**
-   * Custom Eclipse plugin suite generator. Instead of using TestNG core
-   * suite generator, we are using a set of custom generators that allow 
-   * more customization.
-   */
-  private static List createLaunchSuites(String projectName,
-                                         List packages,
-                                         List classNames, 
-                                         Map classMethods, 
-                                         List groupNames,
-                                         Map parameters,
-                                         String annotationType,
-                                         final int logLevel) 
-  {
-    return Arrays.asList(
-        new Object[] {SuiteGenerator.createCustomizedSuite(projectName,
-                                                           packages,
-                                                           classNames, 
-                                                           classMethods, 
-                                                           groupNames,
-                                                           parameters,
-                                                           annotationType,
-                                                           logLevel)});
-  }
-  
   /**
    * Looks for an available configuration that matches the project and confName parameters.
    * If the defaultConfiguration is not null, it is used. The
@@ -506,61 +331,5 @@ public class ConfigurationHelper {
     }
     
     return result;
-  }
-
-  /**
-   * @param configuration
-   */
-  public static void updateLaunchConfiguration(ILaunchConfigurationWorkingCopy configuration, LaunchInfo launchInfo) {
-    final List EMPTY= new ArrayList();
-    Map classMethods= new HashMap();
-    Collection classes= launchInfo.m_groupMap.values();
-    if(null != classes) {
-      for(Iterator it= classes.iterator(); it.hasNext(); ) {
-        List classList= (List) it.next();
-        for(Iterator itc= classList.iterator(); itc.hasNext(); ) {
-          classMethods.put(itc.next(), EMPTY);
-        }
-      }
-    }
-    Collection classNames= launchInfo.m_classNames;
-    List classNamesList= new ArrayList();
-    if(null != classNames && !classNames.isEmpty()) {
-      for(Iterator it= classNames.iterator(); it.hasNext(); ) {
-        Object cls= it.next();
-        classMethods.put(cls, EMPTY);
-        classNamesList.add(cls);
-      }
-    }
-    List packageList = new ArrayList();
-    if (launchInfo.m_packageNames != null) {
-    	packageList.addAll(launchInfo.m_packageNames);
-    }    
-    if(null != launchInfo.m_classMethods) {
-      classMethods.putAll(launchInfo.m_classMethods);
-    }
-    
-    configuration.setAttribute(TestNGLaunchConfigurationConstants.TYPE, launchInfo.m_launchType);
-    configuration.setAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME,
-                               launchInfo.m_projectName);
-    configuration.setAttribute(IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME,
-                               RemoteTestNG.class.getName());
-    configuration.setAttribute(TestNGLaunchConfigurationConstants.CLASS_TEST_LIST,
-                               classNamesList);
-    configuration.setAttribute(TestNGLaunchConfigurationConstants.PACKAGE_TEST_LIST,
-    		packageList);
-    configuration.setAttribute(TestNGLaunchConfigurationConstants.GROUP_LIST,
-                               new ArrayList(launchInfo.m_groupMap.keySet()));
-    configuration.setAttribute(TestNGLaunchConfigurationConstants.GROUP_CLASS_LIST,
-                               Utils.uniqueMergeList(launchInfo.m_groupMap.values()));
-    configuration.setAttribute(TestNGLaunchConfigurationConstants.SUITE_TEST_LIST,
-                               Utils.stringToNullList(launchInfo.m_suiteName));
-    configuration.setAttribute(TestNGLaunchConfigurationConstants.ALL_METHODS_LIST,
-                               toClassMethodsMap(classMethods));
-    configuration.setAttribute(TestNGLaunchConfigurationConstants.TESTNG_COMPLIANCE_LEVEL_ATTR,
-                               launchInfo.m_complianceLevel);
-    configuration.setAttribute(TestNGLaunchConfigurationConstants.LOG_LEVEL,
-                               launchInfo.m_logLevel);
-    
   }
 }

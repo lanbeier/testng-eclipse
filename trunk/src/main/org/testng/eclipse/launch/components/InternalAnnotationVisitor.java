@@ -2,21 +2,18 @@ package org.testng.eclipse.launch.components;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jdt.core.Flags;
 import org.eclipse.jdt.core.IAnnotatable;
 import org.eclipse.jdt.core.IAnnotation;
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.ITypeHierarchy;
 import org.eclipse.jdt.core.JavaModelException;
 import org.testng.eclipse.TestNGPlugin;
-import org.testng.eclipse.launch.TestNGMainTab;
 import org.testng.eclipse.util.signature.MethodDescriptor;
 
 public class InternalAnnotationVisitor implements ITestContent {
@@ -36,6 +33,8 @@ public class InternalAnnotationVisitor implements ITestContent {
 	public static final String TESTNG_ANNOTATION_PACKAGE = "org.testng.annotations";
 
 	public static final String TESTNG_ANNOTATION_NAME = "Test";
+	
+	public static final String TESTNG_ANNOTATION_FULLNAME = TESTNG_ANNOTATION_PACKAGE + "." + TESTNG_ANNOTATION_NAME; 
 
 	public static final String TESTNG_ANNOTATION_NAME_FACTORY = "Factory";
 

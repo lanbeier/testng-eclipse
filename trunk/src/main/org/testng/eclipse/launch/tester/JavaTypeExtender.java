@@ -1,6 +1,6 @@
 package org.testng.eclipse.launch.tester;
 
-import org.testng.eclipse.util.TestSearchEngine;
+import org.testng.eclipse.util.TestSuiteSearchEngine;
 
 import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.jdt.core.IJavaElement;
@@ -28,7 +28,7 @@ public class JavaTypeExtender extends PropertyTester {
     if(IJavaElement.COMPILATION_UNIT == javaElementType
         || IJavaElement.TYPE == javaElementType
         || IJavaElement.METHOD == javaElementType) {
-      return TestSearchEngine.isTest(javaElement);
+      return TestSuiteSearchEngine.isTest(javaElement);
     }
     
     return false;
